@@ -1,0 +1,63 @@
+name: Bug 报告
+description: 报告可复现的功能、兼容性或界面问题
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: 请先搜索已有 Issue，并移除截图、日志中的个人信息和凭据。安全漏洞请使用 GitHub 私密安全报告。
+  - type: input
+    id: version
+    attributes:
+      label: 软件版本
+      placeholder: 例如 3.1.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 环境
+      description: Windows/iOS 版本、显卡与驱动、网络连接方式
+    validations:
+      required: true
+  - type: dropdown
+    id: profile
+    attributes:
+      label: 使用模式
+      options:
+        - 4K60 标准同步
+        - 4K60 低延迟互动
+        - 4K30 稳定兼容
+        - 2K60 中间档
+        - 1080P60 H.264 回退
+        - 未知
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: 按顺序说明从启动到问题出现的操作
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已验证 Release 的 SHA-256
+          required: true
+        - label: 我已移除 Token、Cookie、密码、私钥、IP 与设备标识
+          required: true

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">屏幕共享</title>
+  <desc id="desc">蓝色显示器和向上共享箭头组成的应用图标</desc>
+  <rect x="72" y="80" width="880" height="648" rx="96" fill="#249BC7"/>
+  <rect x="152" y="160" width="720" height="472" rx="44" fill="#F4FBFD"/>
+  <path d="M512 220 344 402h116v176h104V402h116L512 220Z" fill="#249BC7"/>
+  <rect x="464" y="714" width="96" height="132" rx="24" fill="#249BC7"/>
+  <rect x="304" y="824" width="416" height="104" rx="52" fill="#249BC7"/>
+</svg>

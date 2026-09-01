@@ -1,0 +1,167 @@
+<Window x:Class="BlueberryAirPlay4K.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="蓝莓 AirPlay 4K 控制台"
+        Icon="Assets/BlueberryAirPlay4K.ico"
+        Width="940" Height="760" MinWidth="760" MinHeight="560"
+        WindowStartupLocation="CenterScreen" Background="#F3F8FA"
+        FontFamily="Microsoft YaHei UI" UseLayoutRounding="True">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Padding="26,20">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#083344" Offset="0"/>
+                    <GradientStop Color="#0E7490" Offset="0.56"/>
+                    <GradientStop Color="#38BDF8" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="蓝莓 AirPlay 4K" Foreground="White" FontSize="25" FontWeight="SemiBold"/>
+                    <TextBlock Text="HEVC · 4K60 · D3D11 硬件渲染" Foreground="#D8F4FA" FontSize="13" Margin="0,5,0,0"/>
+                </StackPanel>
+                <Border Grid.Column="1" Background="#26000000" BorderBrush="#35FFFFFF" BorderThickness="1"
+                        CornerRadius="18" Padding="14,8" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse x:Name="HeaderStatusDot" Width="9" Height="9" Fill="#B5C4CC" Margin="0,0,8,0"/>
+                        <TextBlock x:Name="HeaderStatusText" Text="正在检查" Foreground="White" FontSize="13"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                      CanContentScroll="False" PanningMode="VerticalOnly" IsDeferredScrollingEnabled="False">
+            <StackPanel Margin="24,20,24,24">
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="6"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="RunningAccent" Background="#94A3B8" CornerRadius="3"/>
+                        <StackPanel Grid.Column="1" Margin="15,0,16,0">
+                            <TextBlock Text="接收状态" FontSize="12" Foreground="#7890A3"/>
+                            <TextBlock x:Name="RunningModeText" Text="接收器未运行" FontSize="19" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextBrush}" Margin="0,4,0,0"/>
+                            <TextBlock x:Name="RunningDetailText" Text="选择模式后点击启动" FontSize="13"
+                                       Foreground="{StaticResource MutedTextBrush}" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Border Grid.Column="2" Background="#E8F7FA" CornerRadius="10" Padding="12,8" VerticalAlignment="Center">
+                            <TextBlock Text="AirPlay 接收端" Foreground="#0E7490" FontSize="12" FontWeight="SemiBold"/>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="选择画质与延迟模式" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                        <TextBlock Text="标准 4K60 适合日常使用；需要操作响应时可切换低延迟。"
+                                   FontSize="13" Foreground="{StaticResource MutedTextBrush}" Margin="0,5,0,15"/>
+
+                        <RadioButton x:Name="Mode4K60Sync" Style="{StaticResource ModeCardRadio}" GroupName="Mode"
+                                     Tag="4k60-sync" IsChecked="True" Checked="Mode_Checked">
+                            <StackPanel>
+                                <TextBlock Text="4K60 标准同步" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Text="推荐 · HEVC · 色彩、清晰度和音画同步优先" FontSize="12"
+                                           Foreground="{StaticResource MutedTextBrush}" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="Mode4K60Low" Style="{StaticResource ModeCardRadio}" GroupName="Mode"
+                                     Tag="4k60-low" Checked="Mode_Checked">
+                            <StackPanel>
+                                <TextBlock Text="4K60 低延迟互动" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Text="HEVC · 到帧尽快显示，视频音画同步可能略弱" FontSize="12"
+                                           Foreground="{StaticResource MutedTextBrush}" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="Mode4K30" Style="{StaticResource ModeCardRadio}" GroupName="Mode"
+                                     Tag="4k30" Checked="Mode_Checked">
+                            <StackPanel>
+                                <TextBlock Text="4K30 稳定兼容" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Text="HEVC · 网络波动或 4K60 不稳定时使用" FontSize="12"
+                                           Foreground="{StaticResource MutedTextBrush}" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="Mode2K60" Style="{StaticResource ModeCardRadio}" GroupName="Mode"
+                                     Tag="2k60" Checked="Mode_Checked">
+                            <StackPanel>
+                                <TextBlock Text="2K60 中间档" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Text="HEVC · 兼顾流畅度和无线网络负载" FontSize="12"
+                                           Foreground="{StaticResource MutedTextBrush}" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton x:Name="Mode1080P60" Style="{StaticResource ModeCardRadio}" GroupName="Mode"
+                                     Tag="1080p60" Checked="Mode_Checked" Margin="0">
+                            <StackPanel>
+                                <TextBlock Text="1080P60 H.264 回退" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Text="兼容排查 · HEVC 或网络异常时使用" FontSize="12"
+                                           Foreground="{StaticResource MutedTextBrush}" Margin="0,3,0,0"/>
+                            </StackPanel>
+                        </RadioButton>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#EAF8FC" BorderBrush="#B8E5ED" BorderThickness="1" CornerRadius="13"
+                        Padding="18" Margin="0,0,0,16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Width="34" Height="34" Background="#C9EFF5" CornerRadius="17">
+                            <TextBlock Text="i" Foreground="#0E7490" FontWeight="Bold" FontSize="17"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                            <TextBlock Text="首帧延迟说明" FontWeight="SemiBold" Foreground="#155E75"/>
+                            <TextBlock Text="新连接需要初始化手机编码、HEVC 解码和 D3D11 管线。提前运行接收器可减少程序冷启动；低延迟模式主要改善连接后的持续响应。"
+                                       Foreground="#276E82" FontSize="13" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="启动设置" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                        <CheckBox x:Name="AutoStartCheckBox" Content="登录 Windows 后自动预启动当前模式"
+                                  Margin="0,12,0,0" Checked="AutoStartCheckBox_Changed" Unchecked="AutoStartCheckBox_Changed"/>
+                        <Expander Header="查看实际启动参数" Foreground="{StaticResource MutedTextBrush}" Margin="0,12,0,0">
+                            <Border Background="#F4F8FA" CornerRadius="8" Padding="12" Margin="0,8,0,0">
+                                <TextBlock x:Name="SelectedArgsText" Foreground="#52697B" FontFamily="Consolas" FontSize="12"
+                                           TextWrapping="Wrap"/>
+                            </Border>
+                        </Expander>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="White" BorderBrush="#DCE8EF" BorderThickness="0,1,0,0" Padding="20,13">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="FooterText" Text="就绪" Foreground="{StaticResource MutedTextBrush}"
+                           FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="打开目录" Background="#E7EFF3" Foreground="#385367" Margin="0,0,9,0" Click="OpenFolderButton_Click"/>
+                    <Button Content="停止" Background="#FDEBEC" Foreground="#B4232F" Margin="0,0,9,0" Click="StopButton_Click"/>
+                    <Button x:Name="StartButton" Content="应用并启动" Background="#0891B2" Foreground="White" Click="StartButton_Click"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

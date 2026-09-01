@@ -161,4 +161,3 @@ SHA-256 是公开的文件指纹，用来检查下载是否完整，不是 Token
 ## 致谢
 
 感谢 [`leapbtw/uxplay-windows`](https://github.com/leapbtw/uxplay-windows)、[`FDH2/UxPlay`](https://github.com/FDH2/UxPlay)、[GStreamer](https://gstreamer.freedesktop.org/) 与相关自由软件贡献者。本项目是在这些工作之上提供的 Windows 中文控制与打包层。
-

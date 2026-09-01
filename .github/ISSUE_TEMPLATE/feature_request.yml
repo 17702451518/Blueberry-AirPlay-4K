@@ -1,0 +1,30 @@
+name: 功能建议
+description: 提议一个明确、可验证且底层能够实现的改进
+title: "[Feature] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 要解决的问题
+      description: 说明使用场景和当前限制，不要只写实现方案。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 底层依据或参考资料
+      description: 如涉及 UxPlay 参数、AirPlay 或 GStreamer，请提供官方文档/上游链接。
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 范围确认
+      options:
+        - label: 该建议不要求收集账号、凭据、投屏内容或遥测
+          required: true
