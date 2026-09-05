@@ -28,3 +28,6 @@ jobs:
 
       - name: Build Release
         run: dotnet build .\src\BlueberryAirPlay4K\BlueberryAirPlay4K.csproj -c Release --no-restore --warnaserror
+
+      - name: Startup regression tests (isolated registry key)
+        run: dotnet run --project .\tests\StartupSettings.Tests\StartupSettings.Tests.csproj -c Release

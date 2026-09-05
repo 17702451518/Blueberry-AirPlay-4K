@@ -135,8 +135,13 @@
                 <Border Style="{StaticResource CardStyle}">
                     <StackPanel>
                         <TextBlock Text="启动设置" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
-                        <CheckBox x:Name="AutoStartCheckBox" Content="登录 Windows 后自动预启动当前模式"
-                                  Margin="0,12,0,0" Checked="AutoStartCheckBox_Changed" Unchecked="AutoStartCheckBox_Changed"/>
+                        <CheckBox x:Name="AutoStartCheckBox" Content="开机启动后台投屏核心（非控制台，默认关闭）"
+                                  Margin="0,12,0,0" Click="AutoStartCheckBox_Click"/>
+                        <TextBlock x:Name="AutoStartStatusText" FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{StaticResource MutedTextBrush}" Margin="0,8,0,0"/>
+                        <Button Content="关闭本程序所有目录的开机启动" HorizontalAlignment="Left"
+                                Background="#E7EFF3" Foreground="#385367" Margin="0,10,0,0"
+                                Click="DisableAutostartButton_Click"/>
                         <Expander Header="查看实际启动参数" Foreground="{StaticResource MutedTextBrush}" Margin="0,12,0,0">
                             <Border Background="#F4F8FA" CornerRadius="8" Padding="12" Margin="0,8,0,0">
                                 <TextBlock x:Name="SelectedArgsText" Foreground="#52697B" FontFamily="Consolas" FontSize="12"

@@ -4,7 +4,7 @@
 
 [![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows)](https://www.microsoft.com/windows)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
-[![Release](https://img.shields.io/badge/release-v3.1.0-0891B2)](RELEASE_NOTES.md)
+[![Release](https://img.shields.io/badge/release-v3.1.1-0891B2)](https://github.com/17702451518/Blueberry-AirPlay-4K/releases/latest)
 [![License](https://img.shields.io/badge/license-GPL--3.0--only-blue)](LICENSE)
 
 蓝莓 AirPlay 4K 是一个独立的 WPF 控制台。它不重新实现 AirPlay 协议，而是为开源接收核心提供中文界面、经过实机验证的画质预设、D3D11 渲染配置、进程管理和当前用户登录预启动。
@@ -15,7 +15,7 @@
 
 普通用户无需克隆源码或安装 Visual Studio：
 
-1. 在 GitHub 的 **Releases** 页面下载 `Blueberry-AirPlay-4K-v3.1.0-win64.zip` 和 `SHA256SUMS.txt`。
+1. 在 GitHub 的 [Releases 页面](https://github.com/17702451518/Blueberry-AirPlay-4K/releases/latest)下载 `Blueberry-AirPlay-4K-v3.1.1-win64.zip` 和 `SHA256SUMS.txt`。
 2. 校验 ZIP 的 SHA-256，然后完整解压到一个可写目录；不要只从压缩包预览界面直接运行。
 3. 确认系统已安装 [.NET 8 Desktop Runtime（x64）](https://dotnet.microsoft.com/download/dotnet/8.0)。
 4. 运行 `蓝莓AirPlay4K控制台.exe`，选择模式并点击“应用并启动”。
@@ -29,7 +29,7 @@
 - 4K30、2K60、1080P60 H.264 兼容回退
 - 固定 D3D11 渲染路径，规避部分设备上的 D3D12 初始化或黑屏问题
 - 中文运行状态、模式说明、启动/重启、停止和打开目录
-- 当前 Windows 用户登录后预启动
+- 可选的后台投屏核心登录启动（默认关闭，需明确确认）
 - 原子写入一行 UxPlay 参数，不生成历史配置副本
 - 只管理当前发布目录中的接收器进程，不结束其他目录的实例
 - 不读取或保存 Token、Cookie、账号密码、浏览器数据、投屏内容或运行历史
@@ -79,7 +79,11 @@ Windows 显示窗口
 - `HKCU\Software\leapbtw\uxplay-windows`
 - 可选：`HKCU\Software\Microsoft\Windows\CurrentVersion\Run\BlueberryAirPlay4K`
 
-关闭“登录后预启动”会删除最后一项。卸载时可在接收器退出后删除解压目录，并按需删除上述当前用户配置。
+开机启动默认关闭。启用后 Windows 直接启动后台 `uxplay-windows` 核心，并不是中文控制台。
+v3.1.1 起，启用前需再次确认；“关闭本程序所有目录的开机启动”按钮只删除本程序拥有的 `BlueberryAirPlay4K` 登记，不影响其他软件、画质设置或当前投屏。
+界面也会显示旧目录或异常登记，不因搬动文件夹而误报未登记。Windows 任务管理器的禁用状态与登记是否存在是两回事。
+使用旧版时，可在 Windows“设置 → 应用 → 启动”或任务管理器中关闭 `BlueberryAirPlay4K`。不要删除整个 `Run` 注册表键。详细行为和迁移说明见 [开机启动说明](docs/AUTOSTART.md)。
+卸载前建议先点击关闭按钮，再退出接收器、删除解压目录，并按需删除上述当前用户配置。
 
 ## 常见问题
 

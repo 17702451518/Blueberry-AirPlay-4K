@@ -49,6 +49,7 @@ public partial class MainWindow : Window
         };
 
     private readonly DispatcherTimer _statusTimer;
+    private readonly StartupSettings _startupSettings = new();
     private bool _loading = true;
     private bool _busy;
     private string _selectedProfileId = "4k60-sync";
@@ -171,33 +172,58 @@ public partial class MainWindow : Window
         });
     }
 
-    private void AutoStartCheckBox_Changed(object sender, RoutedEventArgs e)
+    private void AutoStartCheckBox_Click(object sender, RoutedEventArgs e)
     {
         if (_loading) return;
         try
         {
-            using var runKey = Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
             if (AutoStartCheckBox.IsChecked == true)
             {
+                var answer = MessageBox.Show(
+                    "启用后，每次登录 Windows 都会直接启动后台投屏核心 uxplay-windows，\n" +
+                    "不会打开这个中文控制台，底层程序可能显示窗口或托盘图标。\n\n" +
+                    "普通投屏不需要开启此选项。确定启用吗？",
+                    "确认启用后台投屏核心开机启动",
+                    MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+                if (answer != MessageBoxResult.Yes) return;
+
                 ValidatePackage();
                 WriteSelectedConfiguration();
                 ConfigureRenderer();
-                runKey?.SetValue("BlueberryAirPlay4K", $"\"{EnginePath}\"", RegistryValueKind.String);
-                FooterText.Text = "已启用登录后预启动当前模式";
+                _startupSettings.Enable(EnginePath);
+                FooterText.Text = "已确认启用后台投屏核心开机启动";
             }
             else
             {
-                runKey?.DeleteValue("BlueberryAirPlay4K", false);
-                FooterText.Text = "已关闭登录后预启动";
+                DisableAutostart();
             }
         }
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "自动启动设置失败", MessageBoxButton.OK, MessageBoxImage.Error);
-            _loading = true;
-            LoadAutostartState();
-            _loading = false;
         }
+        finally
+        {
+            LoadAutostartState();
+        }
+    }
+
+    private void DisableAutostartButton_Click(object sender, RoutedEventArgs e)
+    {
+        try { DisableAutostart(); }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "关闭开机启动失败", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally { LoadAutostartState(); }
+    }
+
+    private void DisableAutostart()
+    {
+        _startupSettings.Disable();
+        if (_startupSettings.Read().Exists)
+            throw new InvalidOperationException("启动项仍存在，请重试或检查当前用户的注册表权限。");
+        FooterText.Text = "已关闭本程序开机启动（包括旧目录登记）；不会停止当前投屏";
     }
 
     private void SelectProfileFromExistingConfig()
@@ -228,9 +254,27 @@ public partial class MainWindow : Window
 
     private void LoadAutostartState()
     {
-        using var runKey = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", false);
-        string? value = runKey?.GetValue("BlueberryAirPlay4K") as string;
-        AutoStartCheckBox.IsChecked = value?.Contains(EnginePath, StringComparison.OrdinalIgnoreCase) == true;
+        bool wasLoading = _loading;
+        _loading = true;
+        try
+        {
+            var registration = _startupSettings.Read();
+            // Show any registration owned by this app, even if the directory moved.
+            AutoStartCheckBox.IsChecked = registration.Exists;
+            AutoStartCheckBox.IsEnabled = true;
+            AutoStartStatusText.Text = !registration.Exists
+                ? "未登记开机启动。打开控制台、选择模式和普通投屏都不会自动开启此功能。"
+                : string.Equals(registration.Command, $"\"{EnginePath}\"", StringComparison.OrdinalIgnoreCase)
+                    ? "已登记当前目录的后台投屏核心。可在下方关闭；Windows 任务管理器也可能另行禁用此项。"
+                    : "检测到旧目录或异常的开机启动登记，并不属于当前目录。请点击下方按钮关闭，避免搬动目录后遗漏。";
+        }
+        catch (Exception ex)
+        {
+            AutoStartCheckBox.IsChecked = null;
+            AutoStartCheckBox.IsEnabled = false;
+            AutoStartStatusText.Text = "无法读取开机启动状态，不能视为已关闭：" + ex.Message;
+        }
+        finally { _loading = wasLoading; }
     }
 
     private void ValidatePackage()

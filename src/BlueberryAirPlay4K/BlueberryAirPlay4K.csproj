@@ -9,9 +9,9 @@
     <RootNamespace>BlueberryAirPlay4K</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\BlueberryAirPlay4K.ico</ApplicationIcon>
-    <Version>3.1.0</Version>
-    <FileVersion>3.1.0.0</FileVersion>
-    <AssemblyVersion>3.1.0.0</AssemblyVersion>
+    <Version>3.1.1</Version>
+    <FileVersion>3.1.1.0</FileVersion>
+    <AssemblyVersion>3.1.1.0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebugType>none</DebugType>
