@@ -1,29 +1,50 @@
 # 蓝莓 AirPlay 4K
 
-> 面向 Windows 10/11 的中文 AirPlay 接收控制台，基于 `uxplay-windows` / `UxPlay`，提供 HEVC 4K60、低延迟模式与 D3D11 渲染。
+> 把 iPhone 或 iPad 的屏幕，通过无线网络实时显示到 Windows 电脑上。用中文界面选择画质、启动和停止投屏，无需手动填写复杂参数。
 
 [![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows)](https://www.microsoft.com/windows)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
-[![Release](https://img.shields.io/badge/release-v3.1.1-0891B2)](https://github.com/17702451518/Blueberry-AirPlay-4K/releases/latest)
+[![Release](https://img.shields.io/github/v/release/17702451518/Blueberry-AirPlay-4K)](https://github.com/17702451518/Blueberry-AirPlay-4K/releases/latest)
 [![License](https://img.shields.io/badge/license-GPL--3.0--only-blue)](LICENSE)
 
-蓝莓 AirPlay 4K 是一个独立的 WPF 控制台。它不重新实现 AirPlay 协议，而是为开源接收核心提供中文界面、经过实机验证的画质预设、D3D11 渲染配置、进程管理和当前用户登录预启动。
+## 这个软件是做什么的？
 
-本项目与 Apple Inc. 无隶属、授权或赞助关系；“AirPlay”“iPhone”“iPad”“Apple”是其各自权利人的商标。
+蓝莓 AirPlay 4K 是一款安装在 **Windows 电脑端的苹果设备投屏工具**。你在手机上打开应用、翻看照片或进行操作时，电脑上的投屏窗口会同步显示手机画面。这就是“屏幕镜像”：操作仍在手机上完成，电脑负责接收和显示。
+
+例如，你可以在讲解手机应用时，让旁边的人通过电脑大屏看清操作；也可以把手机里的照片、演示内容或游戏画面显示到电脑上。
+
+使用时，手机和电脑连接同一个路由器的网络，打开电脑端软件，再从 iPhone/iPad 控制中心的“屏幕镜像”中选择接收器即可。**不需要连接手机数据线，也不需要在手机上安装本项目的配套应用。** 电脑可以连接 Wi-Fi，也可以通过网线连接同一路由器。
+
+## 它能做什么，不能做什么？
+
+- **无线投屏：** 把 iPhone/iPad 的屏幕画面显示在 Windows 10/11 电脑上，适合操作演示、内容分享和大屏查看。
+- **选择清晰度和流畅度：** 提供 1080P、2K、4K 等预设，以及最高 60 帧/秒的请求选项。分辨率影响画面细节，帧率影响运动是否流畅。
+- **减少操作到画面显示的等待：** 提供低延迟模式，但无线投屏仍会有延迟，不承诺与手机屏幕完全同时显示。
+- **中文操作界面：** 用按钮切换模式、启动和停止投屏，不需要了解底层命令。
+
+它**不能用电脑鼠标或键盘控制 iPhone，也不提供录屏功能**；不是把电脑画面传到手机的工具，也不面向 Android 手机。
+
+名称中的“4K”表示提供了相应的画质请求选项，**不代表任何手机、任何内容都能达到原生 4K60**。实际效果取决于手机、网络和电脑性能；把低清内容投到大屏上也不会自动增加原本不存在的细节。
+
+## 本项目与上游软件的关系
+
+实际接收手机画面的功能来自开源项目 `uxplay-windows` / `UxPlay`。本项目在它们的基础上增加中文操作界面、画质预设、启动与停止管理，并整理成便于下载使用的完整包；没有自行重写投屏协议，也没有修改上游接收程序及其依赖。
+
+你不需要了解这些技术就能使用。开发者可以在下文查看工作原理、源码构建和第三方许可证。本项目不是 Apple 官方产品，与 Apple Inc. 无隶属、授权或赞助关系。
 
 ## 下载与使用
 
-普通用户无需克隆源码或安装 Visual Studio：
+只想使用软件，请下载 Release 中的完整 ZIP 包，不要下载页面自动生成的 `Source code` 源码包。无需安装编程工具：
 
-1. 在 GitHub 的 [Releases 页面](https://github.com/17702451518/Blueberry-AirPlay-4K/releases/latest)下载 `Blueberry-AirPlay-4K-v3.1.1-win64.zip` 和 `SHA256SUMS.txt`。
+1. 打开 [最新正式版下载页面](https://github.com/17702451518/Blueberry-AirPlay-4K/releases/latest)，展开页面下方的 **Assets（附件）**，下载名称以 `Blueberry-AirPlay-4K-` 开头、以 `-win64.zip` 结尾的完整包，以及 `SHA256SUMS.txt` 校验文件。版本号以该页面为准。
 2. 校验 ZIP 的 SHA-256，然后完整解压到一个可写目录；不要只从压缩包预览界面直接运行。
-3. 确认系统已安装 [.NET 8 Desktop Runtime（x64）](https://dotnet.microsoft.com/download/dotnet/8.0)。
+3. 确认系统已安装 [.NET 8 Desktop Runtime（x64）](https://dotnet.microsoft.com/download/dotnet/8.0)。这是电脑运行本软件需要的微软组件；请选择 **Desktop Runtime**，不是 SDK 或 ASP.NET Core Runtime。
 4. 运行 `蓝莓AirPlay4K控制台.exe`，选择模式并点击“应用并启动”。
 5. 让 iPhone/iPad 与电脑处于同一局域网，在控制中心打开“屏幕镜像”，选择以“蓝莓投屏”开头的接收器。
 
 首次启动时，Windows 防火墙可能询问是否允许网络访问。项目没有代码签名证书，SmartScreen/安全软件也可能显示未知发布者；请先核对 Release 校验值，不要为运行本项目关闭 Windows Defender。
 
-## 功能
+## 技术功能概览
 
 - HEVC 4K60 标准同步与低延迟互动模式
 - 4K30、2K60、1080P60 H.264 兼容回退
@@ -44,7 +65,7 @@
 | 2K60 中间档 | HEVC、2560×1440、60 FPS | 网络或显卡余量有限时 | 清晰度与流畅度折中 |
 | 1080P60 H.264 回退 | H.264、1920×1080、60 FPS | HEVC 兼容性排查 | 兼容性优先 |
 
-这些选项是接收端向发送端提出的能力与输出上限，不保证 iPhone 在每个场景都产生原生 4K60 流。实际分辨率、帧率和码率仍由 iOS、内容类型、无线网络、解码器与显示链路动态决定；项目没有提供一个不能约束 iPhone 编码器的“固定码率”伪开关。
+这些选项是接收端向发送端提出的能力与输出上限，不保证 iPhone 在每个场景都产生原生 4K60 流。实际分辨率、帧率和码率仍由 iOS、内容类型、无线网络、解码器与显示链路动态决定；本项目不提供强制固定手机编码码率的功能。
 
 ## 推荐环境
 
