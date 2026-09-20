@@ -1,6 +1,6 @@
 # 蓝莓 AirPlay 4K
 
-> 把 iPhone 或 iPad 的屏幕，通过无线网络实时显示到 Windows 电脑上。用中文界面选择画质、启动和停止投屏，无需手动填写复杂参数。
+> 将 iPhone 或 iPad 的屏幕无线显示到 Windows 电脑。提供中文界面、4K60 预设、低延迟模式和一键启动，无需手动填写底层参数。
 
 [![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows)](https://www.microsoft.com/windows)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
@@ -36,16 +36,18 @@
 
 只想使用软件，请下载 Release 中的完整 ZIP 包，不要下载页面自动生成的 `Source code` 源码包。无需安装编程工具：
 
-1. 打开 [最新正式版下载页面](https://github.com/17702451518/Blueberry-AirPlay-4K/releases/latest)，展开页面下方的 **Assets（附件）**，下载名称以 `Blueberry-AirPlay-4K-` 开头、以 `-win64.zip` 结尾的完整包，以及 `SHA256SUMS.txt` 校验文件。版本号以该页面为准。
-2. 校验 ZIP 的 SHA-256，然后完整解压到一个可写目录；不要只从压缩包预览界面直接运行。
+1. 打开 [Releases 页面](https://github.com/17702451518/Blueberry-AirPlay-4K/releases)，在 **Assets（附件）** 下载名称以 `Blueberry-AirPlay-4K-` 开头、以 `-win64.zip` 结尾的完整包，以及同版本的 `SHA256SUMS.txt`。请勿下载自动生成的 `Source code` 源码包。
+2. 校验 ZIP 的 SHA-256，然后完整解压到一个可写目录；不要从压缩包预览界面直接运行，也不要只移动其中某一个 `.exe` 或 DLL。
 3. 确认系统已安装 [.NET 8 Desktop Runtime（x64）](https://dotnet.microsoft.com/download/dotnet/8.0)。这是电脑运行本软件需要的微软组件；请选择 **Desktop Runtime**，不是 SDK 或 ASP.NET Core Runtime。
-4. 运行 `蓝莓AirPlay4K控制台.exe`，选择模式并点击“应用并启动”。
+4. 在新版目录根部运行 `蓝莓投屏.exe`；它会启动 `app` 目录中的中文控制台。选择模式后点击“应用并启动”。旧版平铺包仍可直接运行 `蓝莓AirPlay4K控制台.exe`。
 5. 让 iPhone/iPad 与电脑处于同一局域网，在控制中心打开“屏幕镜像”，选择以“蓝莓投屏”开头的接收器。
 
 首次启动时，Windows 防火墙可能询问是否允许网络访问。项目没有代码签名证书，SmartScreen/安全软件也可能显示未知发布者；请先核对 Release 校验值，不要为运行本项目关闭 Windows Defender。
 
 ## 技术功能概览
 
+- 实验性 2K120 / 4K120 帧率请求。该选项只请求最高 120 FPS，实际帧率由发送设备、iOS、网络和电脑决定，详见 [高帧率与任务栏说明](docs/EXPERIMENTAL-120FPS.md)
+- 控制台运行时，将同一程序包中的投屏窗口归为同一任务栏应用组；是否合并由 Windows 任务栏设置决定，程序不会修改全局系统设置
 - HEVC 4K60 标准同步与低延迟互动模式
 - 4K30、2K60、1080P60 H.264 兼容回退
 - 固定 D3D11 渲染路径，规避部分设备上的 D3D12 初始化或黑屏问题
@@ -64,8 +66,26 @@
 | 4K30 稳定兼容 | HEVC、3840×2160、30 FPS 上限 | 4K60 不稳定时 | 降低帧率负载 |
 | 2K60 中间档 | HEVC、2560×1440、60 FPS | 网络或显卡余量有限时 | 清晰度与流畅度折中 |
 | 1080P60 H.264 回退 | H.264、1920×1080、60 FPS | HEVC 兼容性排查 | 兼容性优先 |
+| 2K120 实验性 | HEVC、2560×1440、最高 120 FPS 请求 | 高刷新率设备验证 | 实际帧率不保证，低延迟优先 |
+| 4K120 实验性 | HEVC、3840×2160、最高 120 FPS 请求 | 高性能设备与网络验证 | 负载高，实际帧率不保证 |
 
 这些选项是接收端向发送端提出的能力与输出上限，不保证 iPhone 在每个场景都产生原生 4K60 流。实际分辨率、帧率和码率仍由 iOS、内容类型、无线网络、解码器与显示链路动态决定；本项目不提供强制固定手机编码码率的功能。
+
+## 新版目录结构
+
+从 v3.2.0-preview.2 起，发行包把启动入口、界面程序和底层依赖分开存放，根目录不再堆满 DLL。请完整保留目录结构：
+
+```text
+蓝莓 AirPlay 4K/
+├─ 蓝莓投屏.exe        启动入口
+├─ README.md           快速使用说明
+├─ LICENSE             控制台许可证
+├─ app/                中文控制台及 .NET 运行文件
+├─ runtime/            UxPlay、Qt、GStreamer 与编解码依赖
+└─ docs/               更新说明、来源与第三方许可证
+```
+
+`runtime` 里的 DLL、子目录和可执行文件是投屏核心运行所需文件，并非多余缓存；不要为了“精简”而删除或拆开移动。此调整降低了根目录杂乱度，不代表删减了经验证的解码依赖。
 
 ## 推荐环境
 
