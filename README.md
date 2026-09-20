@@ -7,6 +7,9 @@
 [![Release](https://img.shields.io/github/v/release/17702451518/Blueberry-AirPlay-4K)](https://github.com/17702451518/Blueberry-AirPlay-4K/releases/latest)
 [![License](https://img.shields.io/badge/license-GPL--3.0--only-blue)](LICENSE)
 
+<img width="1624" height="1320" alt="image" src="https://github.com/user-attachments/assets/b5452e94-cf21-40e1-978d-d36755272a59" />
+
+
 ## 这个软件是做什么的？
 
 蓝莓 AirPlay 4K 是一款安装在 **Windows 电脑端的苹果设备投屏工具**。你在手机上打开应用、翻看照片或进行操作时，电脑上的投屏窗口会同步显示手机画面。这就是“屏幕镜像”：操作仍在手机上完成，电脑负责接收和显示。
