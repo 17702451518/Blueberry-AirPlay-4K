@@ -30,8 +30,11 @@ static void adjust_frame(RECT *rect,LONG style,HWND hwnd) {
 }
 
 static void viewport(void) {
-    if (!window) return;
+    if (!window || IsIconic(window)) return;
     RECT r; GetClientRect(window, &r);
+    /* A deferred redraw can race with minimization/restoration. GStreamer
+     * rejects zero-size rectangles; wait for the next nonempty WM_SIZE. */
+    if(r.right<=0 || r.bottom<=0)return;
     EnterCriticalSection(&lock);
     GstElement *target = sink ? GST_ELEMENT(gst_object_ref(sink)) : NULL;
     LeaveCriticalSection(&lock);
@@ -61,6 +64,11 @@ static void resize_window(void) {
     MONITORINFO monitor = {sizeof(MONITORINFO)};
     GetMonitorInfoW(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &monitor);
     LONG style = state == 2 ? WS_POPUP : WS_OVERLAPPEDWINDOW;
+    /* Replacing the frame style must not clear WS_VISIBLE. Console commands
+     * call ShowWindow afterwards, but Escape/system restore do not. Clearing
+     * visibility leaves the D3D11 child occluded until another command shows it.
+     * Preserve hidden windows too: resizing alone must never reopen them. */
+    style |= GetWindowLongPtrW(window,GWL_STYLE) & WS_VISIBLE;
     arranging=1;
     /* SetWindowPos alone does not clear WS_MAXIMIZE or restore placement. */
     if(IsZoomed(window) || IsIconic(window))ShowWindow(window,SW_RESTORE);

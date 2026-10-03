@@ -3,11 +3,29 @@
 #include <windows.h>
 #include <stdio.h>
 
+/* Capture the composed parent, not only the video child. A correct child
+ * texture does not establish that the parent is still visible after Escape. */
+static int visible_white_frame(HWND window,const char *label) {
+    Sleep(400);
+    if(!IsWindowVisible(window) || IsIconic(window)) {
+        fprintf(stderr,"FAIL: %s lost window visibility\n",label);return 0;
+    }
+    RECT r;GetClientRect(window,&r);
+    HDC dc=GetDC(window),copy=CreateCompatibleDC(dc);
+    HBITMAP bitmap=CreateCompatibleBitmap(dc,r.right,r.bottom);
+    HGDIOBJ old=SelectObject(copy,bitmap);
+    BOOL captured=PrintWindow(window,copy,3);
+    COLORREF pixel=captured?GetPixel(copy,r.right/2,r.bottom/2):CLR_INVALID;
+    SelectObject(copy,old);DeleteObject(bitmap);DeleteDC(copy);ReleaseDC(window,dc);
+    printf("%s: composed paused pixel=%06lx\n",label,(unsigned long)pixel);fflush(stdout);
+    return pixel!=CLR_INVALID && GetRValue(pixel)>200 && GetGValue(pixel)>200 && GetBValue(pixel)>200;
+}
+
 int main(int argc,char **argv) {
     SetProcessDpiAwarenessContext((HANDLE)-4);
     gst_init(&argc,&argv);
     const int sizes[][2]={{1280,720},{720,1280},{3840,2160},{2160,3840}};
-    int count=0;
+    int count=0,recovery_count=0;
     for(int i=0;i<4;i++) {
         char description[256];snprintf(description,sizeof(description),
             "videotestsrc pattern=white ! video/x-raw,width=%d,height=%d,framerate=30/1 ! videoconvert ! d3d11videosink",sizes[i][0],sizes[i][1]);
@@ -57,6 +75,25 @@ int main(int argc,char **argv) {
         int toggled[8]={0};SendMessageW(window,WM_APP+3,0,(LPARAM)toggled);if(toggled[7]!=2)return 9;
         SendMessageW(window,WM_KEYDOWN,VK_ESCAPE,0);Sleep(80);
         SendMessageW(window,WM_APP+3,0,(LPARAM)toggled);if(toggled[7]!=0)return 10;
+        if(!visible_white_frame(window,"Escape baseline"))return 21;
+        for(int m=0;m<3;m++) {
+            SendMessageW(window,WM_APP+2,m,2);
+            SendMessageW(window,WM_KEYDOWN,VK_ESCAPE,0);
+            if(!visible_white_frame(window,"fullscreen -> Escape"))return 22;
+            recovery_count++;
+            SendMessageW(window,WM_APP+2,m,2);
+            SendMessageW(window,WM_SYSCOMMAND,SC_RESTORE,0);
+            if(!visible_white_frame(window,"fullscreen -> system restore"))return 23;
+            recovery_count++;
+            SendMessageW(window,WM_APP+2,m,1);
+            SendMessageW(window,WM_SYSCOMMAND,SC_RESTORE,0);
+            if(!visible_white_frame(window,"maximize -> titlebar restore"))return 24;
+            recovery_count++;
+            ShowWindow(window,SW_MINIMIZE);
+            SendMessageW(window,WM_SYSCOMMAND,SC_RESTORE,0);
+            if(!visible_white_frame(window,"minimize -> restore"))return 25;
+            recovery_count++;
+        }
         SendMessageW(window,WM_APP+2,0,2);
         SendMessageW(window,WM_KEYDOWN,VK_RIGHT,0);SendMessageW(window,WM_KEYDOWN,VK_DOWN,0);
         Sleep(80);
@@ -68,8 +105,13 @@ int main(int argc,char **argv) {
         SendMessageW(window,WM_APP+2,1,1);SendMessageW(window,WM_SYSCOMMAND,SC_RESTORE,0);
         SendMessageW(window,WM_APP+3,0,(LPARAM)toggled);if(toggled[7]!=0 || IsZoomed(window))return 16;
         SendMessageW(window,WM_SYSCOMMAND,SC_CLOSE,0);if(IsWindowVisible(window))return 17;
+        RECT hidden;GetWindowRect(window,&hidden);
+        SetWindowPos(window,NULL,hidden.left,hidden.top,hidden.right-hidden.left+8,
+            hidden.bottom-hidden.top+8,SWP_NOZORDER|SWP_NOACTIVATE);
+        if(IsWindowVisible(window))return 26;
         SendMessageW(window,WM_APP+2,2,0);
         if(!IsWindowVisible(window))return 18;
+        if(!visible_white_frame(window,"hidden -> display command"))return 27;
         SendMessageW(window,WM_APP+2,1,0);
         for(int edge=WMSZ_LEFT;edge<=WMSZ_BOTTOMRIGHT;edge++) {
             RECT drag;GetWindowRect(window,&drag);drag.right+=37;drag.bottom+=29;
@@ -81,5 +123,5 @@ int main(int argc,char **argv) {
         }
         gst_element_set_state(pipeline,GST_STATE_NULL);gst_object_unref(bus);gst_object_unref(pipeline);
     }
-    printf("PASS: %d D3D11 display combinations, including 4K portrait/landscape.\n",count);return 0;
+    printf("PASS: %d display combinations + %d composed paused-frame recovery paths, including 4K portrait/landscape.\n",count,recovery_count);return 0;
 }

@@ -3,7 +3,7 @@ param(
     [Parameter(Mandatory=$true)][string]$OutputDirectory,
     [string]$Dotnet = 'dotnet',
     [string]$DisplayRuntime,
-    [string]$Version = '3.2.0-preview.6'
+    [string]$Version = '3.2.0-preview.7'
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
