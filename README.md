@@ -7,8 +7,7 @@
 [![Release](https://img.shields.io/github/v/release/17702451518/Blueberry-AirPlay-4K)](https://github.com/17702451518/Blueberry-AirPlay-4K/releases/latest)
 [![License](https://img.shields.io/badge/license-GPL--3.0--only-blue)](LICENSE)
 
-<img width="1624" height="1320" alt="image" src="https://github.com/user-attachments/assets/b5452e94-cf21-40e1-978d-d36755272a59" />
-
+<img width="1624" height="1320" alt="蓝莓 AirPlay 4K 中文控制台（早期预览界面）" src="https://github.com/user-attachments/assets/b5452e94-cf21-40e1-978d-d36755272a59" />
 
 ## 这个软件是做什么的？
 
@@ -31,11 +30,19 @@
 
 ## 本项目与上游软件的关系
 
-实际接收手机画面的功能来自开源项目 `uxplay-windows` / `UxPlay`。本项目在它们的基础上增加中文操作界面、画质预设、启动与停止管理，并整理成便于下载使用的完整包；没有自行重写投屏协议，也没有修改上游接收程序及其依赖。
+实际接收手机画面的功能来自开源项目 `uxplay-windows` / `UxPlay`。本项目增加中文操作界面、画质预设、启动与停止管理，并整理成完整包；没有自行重写投屏协议。v3.1.x 与早期预览包使用原上游二进制；v3.2.0-preview.5 为实现显示控制，重新构建了接收核心，新增窗口与显示区域管理，具体源码版本及补丁见 [native/README.md](native/README.md)。
 
 你不需要了解这些技术就能使用。开发者可以在下文查看工作原理、源码构建和第三方许可证。本项目不是 Apple 官方产品，与 Apple Inc. 无隶属、授权或赞助关系。
 
 ## 下载与使用
+
+### v3.2.0-preview.5 显示控制预览
+
+新增三种显示方式：**原始尺寸（100%）**、**等比窗口**、**适应窗口**。每一种都可以独立选择普通窗口、保留任务栏最大化或隐藏任务栏全屏。切换显示设置不需要断开投屏；F11 切换全屏，Esc 返回普通窗口。
+
+等比窗口的最大化会在可用工作区内尽可能放大，例如横屏画面可以宽度达到屏幕边界、高度保持比例，不必强行撑满整个窗口。全屏覆盖显示器；画面与显示器比例不同时会有留白，不进行变形拉伸。原始尺寸超过屏幕时可平移查看。
+
+100% 指接收画面与屏幕物理像素 1:1，不代表无线编码无损。该版本重新构建了接收核心与相关依赖，已完成本机测试画面检查，仍需 iPhone/iPad 实机验证。**必须使用该版本完整包，不能只更新控制台。** 完整规则见 [显示模式说明](docs/DISPLAY-MODES.md)。GitHub 稳定版与预览包的附件可能不同，请以对应 Release 为准。
 
 只想使用软件，请下载 Release 中的完整 ZIP 包，不要下载页面自动生成的 `Source code` 源码包。无需安装编程工具：
 
@@ -106,7 +113,7 @@
 iPhone / iPad
     │ AirPlay 镜像流 + DNS-SD 发现
     ▼
-uxplay-windows 2.0.0.1736 / UxPlay 1.73.6
+uxplay-windows / UxPlay（版本与修改见 SOURCE_CODE.md）
     │ GStreamer 解码与 D3D11 输出
     ▼
 Windows 显示窗口
@@ -118,6 +125,8 @@ Windows 显示窗口
 ```
 
 控制台写入：
+
+- 当前程序包 `runtime/display-mode.txt`（显示方式与窗口状态，不含凭据）
 
 - `%APPDATA%\leapbtw\uxplay-windows\arguments.txt`
 - `HKCU\Software\leapbtw\uxplay-windows`
@@ -158,7 +167,7 @@ dotnet restore .\src\BlueberryAirPlay4K\BlueberryAirPlay4K.csproj
 dotnet build .\src\BlueberryAirPlay4K\BlueberryAirPlay4K.csproj -c Release --no-restore
 ```
 
-控制台运行时需要和 `uxplay-windows.exe` 及其完整依赖位于同一目录。大型第三方二进制不进入 Git 历史，而是仅在 GitHub Release 的便携包中分发。
+结构化程序包中，控制台位于 `app/`，接收核心与完整依赖位于相邻的 `runtime/`。原平铺目录仍兼容。新版显示核心的构建方法见 [native/README.md](native/README.md)。大型第三方二进制不进入 Git 历史，而是仅在 GitHub Release 的便携包中分发。
 
 ## 项目结构
 
@@ -179,7 +188,7 @@ Blueberry-AirPlay-4K/
 
 ## 来源、修改与可复现校验
 
-发布包以 [`leapbtw/uxplay-windows` 2.0.0.1736](https://github.com/leapbtw/uxplay-windows/releases/tag/2.0.0.1736) 为接收核心，其中包含 [`FDH2/UxPlay` 1.73.6](https://github.com/FDH2/UxPlay/releases/tag/v1.73.6)。本项目没有修改上游 `uxplay-windows.exe` 或其依赖，只新增独立的中文 WPF 控制台、参数预设和说明文档。
+v3.1.x 和早期预览包以 [`leapbtw/uxplay-windows` 2.0.0.1736](https://github.com/leapbtw/uxplay-windows/releases/tag/2.0.0.1736) 为接收核心，包含 [`FDH2/UxPlay` 1.73.6](https://github.com/FDH2/UxPlay/releases/tag/v1.73.6)，保留原上游二进制。v3.2.0-preview.5 改为固定源码重新构建并增加显示窗口补丁，同时关闭新上游默认的磁盘会话日志；不是原上游未经修改的二进制，具体版本见 `SOURCE_CODE.md` 与包内构建清单。
 
 用于制作 v3.1.0 的上游官方 `uxplay-windows.zip`：
 

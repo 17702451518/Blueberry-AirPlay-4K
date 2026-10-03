@@ -32,6 +32,12 @@ public partial class MainWindow : Window
         SourceInitialized += (_, _) => TaskbarGrouping.TryApply(new System.Windows.Interop.WindowInteropHelper(this).Handle);
         SelectProfileFromExistingConfig();
         LoadAutostartState();
+        var display = new DisplaySettings(_layout.Runtime);
+        var savedDisplay = display.Read();
+        DisplayModeBox.SelectedIndex = (int)savedDisplay.Mode;
+        DisplayStateBox.SelectedIndex = (int)savedDisplay.State;
+        DisplayControls.IsEnabled = display.Supported;
+        DisplayCompatibilityText.Visibility = display.Supported ? Visibility.Collapsed : Visibility.Visible;
         _loading = false;
         UpdateSelectedProfileText();
         UpdateStatus();
@@ -43,6 +49,17 @@ public partial class MainWindow : Window
     }
 
     private ReceiverProfile SelectedProfile => Profiles[_selectedProfileId];
+
+    private void ApplyDisplayButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            new DisplaySettings(_layout.Runtime).Apply((PictureMode)DisplayModeBox.SelectedIndex,
+                (PictureWindowState)DisplayStateBox.SelectedIndex);
+            FooterText.Text = "显示设置已应用；无需断开投屏。未连接时将在收到画面后生效。";
+        }
+        catch (Exception ex) { MessageBox.Show(this, ex.Message, "显示设置失败", MessageBoxButton.OK, MessageBoxImage.Error); }
+    }
 
     private void Mode_Checked(object sender, RoutedEventArgs e)
     {

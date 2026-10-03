@@ -8,6 +8,15 @@ GitHub Release 的完整 Windows ZIP 包含项目控制台以及多个自由/开
 
 ## 接收核心
 
+### v3.2.0-preview.5 显示控制版本
+
+- [uxplay-windows 固定提交](https://github.com/leapbtw/uxplay-windows/tree/f76fe48400916449fd601b1c0444021aaf517082)，执行递归子模块初始化取得对应 libuxplay。
+- 本项目新增源码、接入补丁与测试位于 [native/](native/README.md)，构建和部署脚本位于 `scripts/Build-DisplayRuntime.ps1`。
+- Qt、GStreamer、FFmpeg 等使用 [MSYS2 MINGW-packages 源码与构建配方](https://github.com/msys2/MINGW-packages)。二进制的具体包版本记录在包内 `runtime/resources/build-manifest.json`，应使用同版本配方及上游源码重建；构建未启用 `-march=native`，不绑定开发电脑 CPU。
+- Bonjour / BLE 沿用下述旧包，旧版本入口继续适用于这两部分。新核心与依赖不是原官方 ZIP 的字节副本。
+
+### v3.1.x 原接收核心
+
 - uxplay-windows 2.0.0.1736：<https://github.com/leapbtw/uxplay-windows/tree/2.0.0.1736>
 - uxplay-windows 2.0.0.1736 Release：<https://github.com/leapbtw/uxplay-windows/releases/tag/2.0.0.1736>
 - UxPlay 1.73.6：<https://github.com/FDH2/UxPlay/tree/v1.73.6>

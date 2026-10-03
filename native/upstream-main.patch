@@ -1,0 +1,21 @@
+diff --git a/src/main.cpp b/src/main.cpp
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -172,15 +172,10 @@
+ #endif
+ 
+-    // Keep logging alive through QApplication destruction as well.
+-    SessionLog sessionLog;
+-    const bool loggingReady = sessionLog.start();
++    // Blueberry does not persist connection/session diagnostics by default.
+     QApplication app(argc, argv);
+     app.setOrganizationName("leapbtw");
+     app.setApplicationName("uxplay-windows");
+-    app.setProperty("sessionLogPath", loggingReady ? sessionLog.path() : QString());
+-    if (!loggingReady) {
+-        QMessageBox::warning(nullptr, "Logging unavailable", sessionLog.errorString());
+-    }
++    app.setProperty("sessionLogPath", QString());
+     qputenv("GST_DEBUG_NO_COLOR", "1");
+     app.setWindowIcon(QIcon(QApplication::applicationDirPath() + "/resources/icon.ico"));
+     

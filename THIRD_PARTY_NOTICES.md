@@ -15,7 +15,7 @@
 9D3A51C15FC9DB857351195E7EB7BBB21700D9AE25D936A54BCF8536B62CCA18
 ```
 
-本项目保留上游接收核心和依赖文件原样，只在相同发布目录加入独立控制台与项目文档。
+上述原样二进制说明适用于 v3.1.x 及早期预览包。v3.2.0-preview.5 接收核心以 uxplay-windows 提交 `f76fe48400916449fd601b1c0444021aaf517082` 及其固定 libuxplay 子模块重新构建，加入本仓库 `native/` 下的窗口管理补丁；Qt、GStreamer 与关联依赖由 MSYS2 UCRT64 获取，具体包版本保存在 `runtime/resources/build-manifest.json`。Bonjour 与 BLE 可执行文件沿用原运行包，不更改字节。不能将新版本描述为上游未经修改的官方二进制。
 
 ## 运行依赖
 

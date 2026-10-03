@@ -1,0 +1,30 @@
+diff --git a/renderers/CMakeLists.txt b/renderers/CMakeLists.txt
+--- a/renderers/CMakeLists.txt
++++ b/renderers/CMakeLists.txt
+@@ -48,6 +48,7 @@
+ add_library( renderers
+              STATIC
+              audio_renderer.c
++             display_window.c
+              video_renderer.c
+              mux_renderer.c )
+ 
+diff --git a/renderers/video_renderer.c b/renderers/video_renderer.c
+--- a/renderers/video_renderer.c
++++ b/renderers/video_renderer.c
+@@ -23,6 +23,7 @@
+ #include <gst/gst.h>
+ #include <gst/app/gstappsrc.h>
+ #include "video_renderer.h"
++#include "display_window.h"
+ 
+ #define SECOND_IN_NSECS 1000000000UL
+ #define SECOND_IN_MICROSECS 1000000
+@@ -465,6 +466,7 @@
+         }
+ #endif
+         renderer_type[i]->bus = gst_element_get_bus(renderer_type[i]->pipeline);
++        blueberry_display_attach(renderer_type[i]->bus);
+         gst_element_set_state (renderer_type[i]->pipeline, GST_STATE_READY);
+         GstState state;
+         GstStateChangeReturn ret = gst_element_get_state (renderer_type[i]->pipeline, &state, NULL, 100 * GST_MSECOND);

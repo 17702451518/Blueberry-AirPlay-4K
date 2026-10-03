@@ -31,3 +31,9 @@ jobs:
 
       - name: Startup regression tests (isolated registry key)
         run: dotnet run --project .\tests\StartupSettings.Tests\StartupSettings.Tests.csproj -c Release
+
+      - name: Display settings regression tests
+        run: dotnet run --project .\tests\DisplaySettings.Tests\DisplaySettings.Tests.csproj -c Release
+
+      - name: Package isolation and taskbar grouping tests
+        run: dotnet run --project .\tests\TaskbarGrouping.Tests\TaskbarGrouping.Tests.csproj -c Release
