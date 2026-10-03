@@ -8,7 +8,7 @@ GitHub Release 的完整 Windows ZIP 包含项目控制台以及多个自由/开
 
 ## 接收核心
 
-### v3.2.0-preview.7 显示控制版本
+### v3.2.0-preview.8 显示控制版本
 
 - [uxplay-windows 固定提交](https://github.com/leapbtw/uxplay-windows/tree/f76fe48400916449fd601b1c0444021aaf517082)，执行递归子模块初始化取得对应 libuxplay。
 - 本项目新增源码、接入补丁与测试位于 [native/](native/README.md)，构建和部署脚本位于 `scripts/Build-DisplayRuntime.ps1`。

@@ -101,19 +101,19 @@
                                    FontSize="13" Foreground="{StaticResource MutedTextBrush}" Margin="0,5,0,15"/>
 
                         <UniformGrid Columns="2">
-                        <RadioButton x:Name="Mode4K60Sync" Style="{StaticResource ModeCardRadio}" GroupName="Mode" Margin="0,0,8,0"
+                        <RadioButton x:Name="Mode4K60Sync" Style="{StaticResource ModeCardRadio}" GroupName="Mode" Margin="0,0,4,0"
                                      Tag="4k60-sync" IsChecked="True" Checked="Mode_Checked">
                             <StackPanel>
                                 <TextBlock Text="4K60 标准同步" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
-                                <TextBlock Text="推荐 · HEVC · 色彩、清晰度和音画同步优先" FontSize="12"
+                                <TextBlock Text="推荐 · HEVC · 色彩、清晰度和音画同步优先" FontSize="12" TextWrapping="Wrap"
                                            Foreground="{StaticResource MutedTextBrush}" Margin="0,3,0,0"/>
                             </StackPanel>
                         </RadioButton>
-                        <RadioButton x:Name="Mode4K60Low" Style="{StaticResource ModeCardRadio}" GroupName="Mode"
+                        <RadioButton x:Name="Mode4K60Low" Style="{StaticResource ModeCardRadio}" GroupName="Mode" Margin="4,0,0,0"
                                      Tag="4k60-low" Checked="Mode_Checked">
                             <StackPanel>
                                 <TextBlock Text="4K60 低延迟互动" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
-                                <TextBlock Text="HEVC · 到帧尽快显示，视频音画同步可能略弱" FontSize="12"
+                                <TextBlock Text="HEVC · 到帧尽快显示，视频音画同步可能略弱" FontSize="12" TextWrapping="Wrap"
                                            Foreground="{StaticResource MutedTextBrush}" Margin="0,3,0,0"/>
                             </StackPanel>
                         </RadioButton>

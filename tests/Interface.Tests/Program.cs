@@ -22,6 +22,26 @@ internal static class Program
             ((RadioButton)window.FindName("DisplayFullscreen")).IsChecked = true;
             if (display.Read().State != PictureWindowState.Fullscreen) throw new Exception("State not applied immediately");
             var content = (FrameworkElement)window.Content;
+            var left = (RadioButton)window.FindName("Mode4K60Sync");
+            var right = (RadioButton)window.FindName("Mode4K60Low");
+            // Verify the template border, not just equal parent grid cells.
+            foreach (double width in new[] { 760d, 940d, 1400d })
+            {
+                foreach (RadioButton selected in new[] { left, right })
+                {
+                selected.IsChecked = true;
+                content.Measure(new Size(width,760));content.Arrange(new Rect(0,0,width,760));content.UpdateLayout();
+                var leftCard = (Border)left.Template.FindName("Card",left);
+                var rightCard = (Border)right.Template.FindName("Card",right);
+                var a = leftCard.TranslatePoint(new Point(),content);
+                var b = rightCard.TranslatePoint(new Point(),content);
+                if(Math.Abs(leftCard.ActualWidth-rightCard.ActualWidth)>0.1 ||
+                   Math.Abs(leftCard.ActualHeight-rightCard.ActualHeight)>0.1 ||
+                   Math.Abs(a.Y-b.Y)>0.1) throw new Exception($"Unequal quality cards at width {width}");
+                Console.WriteLine($"PASS: equal quality-card size/alignment at width {width}, selected={selected.Tag}: {leftCard.ActualWidth} x {leftCard.ActualHeight}");
+                }
+            }
+            left.IsChecked = true;
             content.Measure(new Size(940,760)); content.Arrange(new Rect(0,0,940,760)); content.UpdateLayout();
             if (args.Length > 0)
             {
