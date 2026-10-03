@@ -23,6 +23,11 @@ if ($LASTEXITCODE -ne 0) {
     if ($LASTEXITCODE) { throw 'Session logging policy patch failed' }
 }
 $prefix = Join-Path $MsysRoot 'ucrt64'
+& git -C $upstream apply --reverse --check (Join-Path $repo 'native\upstream-ui.patch') 2>$null
+if ($LASTEXITCODE -ne 0) {
+    & git -C $upstream apply (Join-Path $repo 'native\upstream-ui.patch')
+    if ($LASTEXITCODE) { throw 'Chinese interface patch failed' }
+}
 $env:PATH = "$(Join-Path $prefix 'bin');$env:PATH"
 $env:BONJOUR_SDK_HOME = Join-Path $upstream 'Bonjour SDK'
 $build = Join-Path $upstream 'build-blueberry'
@@ -58,3 +63,4 @@ foreach ($directory in @('etc\fonts','share\fontconfig','lib\gio\modules','share
 & (Join-Path $upstream 'scripts\collect-runtime-dependencies.ps1') -StageDir $output -MsysRoot $MsysRoot -EnvironmentName ucrt64 -ManifestPath (Join-Path $output 'resources\bundle-files.json')
 if (Test-Path -LiteralPath $env:GST_REGISTRY_1_0) { Remove-Item -LiteralPath $env:GST_REGISTRY_1_0 }
 Write-Output "Display runtime: $output"
+& (Join-Path $repo 'scripts\Update-RuntimeManifest.ps1') -Runtime $output

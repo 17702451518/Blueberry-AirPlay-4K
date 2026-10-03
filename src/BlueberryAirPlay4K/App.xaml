@@ -90,6 +90,31 @@
             </Setter>
         </Style>
 
+        <Style x:Key="DisplayChoice" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Choice" Background="#F8FBFD" BorderBrush="#DCE8EF" BorderThickness="1" CornerRadius="9" Padding="12,13">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Choice" Property="Background" Value="#EAF9FC"/>
+                                <Setter TargetName="Choice" Property="BorderBrush" Value="#0891B2"/>
+                                <Setter Property="Foreground" Value="#0E7490"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Choice" Property="BorderBrush" Value="#0891B2"/></Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Choice" Property="BorderThickness" Value="2"/></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Choice" Property="Opacity" Value="0.5"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style TargetType="CheckBox">
             <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
             <Setter Property="FontSize" Value="13"/>

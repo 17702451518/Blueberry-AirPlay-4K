@@ -17,6 +17,9 @@ public partial class MainWindow : Window
     private readonly StartupSettings _startupSettings = new();
     private bool _loading = true;
     private bool _busy;
+    private PictureMode _pictureMode = PictureMode.FitWindow;
+    private PictureWindowState _pictureState;
+    private readonly DispatcherTimer _profileTimer = new() { Interval = TimeSpan.FromMilliseconds(450) };
     private string _selectedProfileId = "4k60-sync";
 
     private readonly PackageLayout _layout = new(AppContext.BaseDirectory);
@@ -29,13 +32,17 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ContentStack.Children.Remove(QualityCard);
+        ContentStack.Children.Insert(0, QualityCard);
         SourceInitialized += (_, _) => TaskbarGrouping.TryApply(new System.Windows.Interop.WindowInteropHelper(this).Handle);
         SelectProfileFromExistingConfig();
         LoadAutostartState();
         var display = new DisplaySettings(_layout.Runtime);
         var savedDisplay = display.Read();
-        DisplayModeBox.SelectedIndex = (int)savedDisplay.Mode;
-        DisplayStateBox.SelectedIndex = (int)savedDisplay.State;
+        _pictureMode = savedDisplay.Mode;
+        _pictureState = savedDisplay.State;
+        new[] { DisplayOriginal, DisplayAspect, DisplayFit }[(int)_pictureMode].IsChecked = true;
+        new[] { DisplayNormal, DisplayMaximized, DisplayFullscreen }[(int)_pictureState].IsChecked = true;
         DisplayControls.IsEnabled = display.Supported;
         DisplayCompatibilityText.Visibility = display.Supported ? Visibility.Collapsed : Visibility.Visible;
         _loading = false;
@@ -45,17 +52,27 @@ public partial class MainWindow : Window
         _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _statusTimer.Tick += (_, _) => UpdateStatus();
         _statusTimer.Start();
-        Closed += (_, _) => _statusTimer.Stop();
+        _profileTimer.Tick += (_, _) =>
+        {
+            if (_busy) return;
+            _profileTimer.Stop();
+            if (IsOurEngineRunning()) StartButton_Click(this, new RoutedEventArgs());
+        };
+        Closed += (_, _) => { _statusTimer.Stop(); _profileTimer.Stop(); };
     }
 
     private ReceiverProfile SelectedProfile => Profiles[_selectedProfileId];
 
-    private void ApplyDisplayButton_Click(object sender, RoutedEventArgs e)
+    private void DisplayChoice_Checked(object sender, RoutedEventArgs e)
     {
+        if (sender is not RadioButton radio || radio.Tag is not string tag) return;
+        if (radio.GroupName == "PictureMode") _pictureMode = (PictureMode)int.Parse(tag);
+        else _pictureState = (PictureWindowState)int.Parse(tag);
+        if (_loading) return;
         try
         {
-            new DisplaySettings(_layout.Runtime).Apply((PictureMode)DisplayModeBox.SelectedIndex,
-                (PictureWindowState)DisplayStateBox.SelectedIndex);
+            var display = new DisplaySettings(_layout.Runtime);
+            if (display.Supported) display.Apply(_pictureMode, _pictureState);
             FooterText.Text = "显示设置已应用；无需断开投屏。未连接时将在收到画面后生效。";
         }
         catch (Exception ex) { MessageBox.Show(this, ex.Message, "显示设置失败", MessageBoxButton.OK, MessageBoxImage.Error); }
@@ -69,6 +86,9 @@ public partial class MainWindow : Window
             if (!_loading)
             {
                 UpdateSelectedProfileText();
+                _profileTimer.Stop();
+                if (IsOurEngineRunning() || _busy) _profileTimer.Start();
+                else FooterText.Text = "画质已选择，启动接收器后生效。";
             }
         }
     }
@@ -76,10 +96,6 @@ public partial class MainWindow : Window
     private async void StartButton_Click(object sender, RoutedEventArgs e)
     {
         if (_busy) return;
-        if (_selectedProfileId.EndsWith("-experimental", StringComparison.Ordinal) &&
-            MessageBox.Show(this,
-                "此模式向发送设备请求最高 120 FPS，实际投屏帧率取决于设备、系统及网络条件。\n\n建议优先选择 2K120。若出现画面异常、播放不流畅或音画不同步，请恢复至 4K60 标准同步模式。\n\n是否应用此实验性模式？",
-                "实验性高帧率模式", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes) return;
         _busy = true;
         StartButton.IsEnabled = false;
         FooterText.Text = "正在应用配置并启动……";
@@ -101,6 +117,8 @@ public partial class MainWindow : Window
 
             await StopOurProcessesAsync();
             WriteSelectedConfiguration();
+            var display = new DisplaySettings(_layout.Runtime);
+            if (display.Supported) display.Apply(_pictureMode, _pictureState);
             ConfigureRenderer();
 
             Process.Start(new ProcessStartInfo
@@ -134,6 +152,7 @@ public partial class MainWindow : Window
     private async void StopButton_Click(object sender, RoutedEventArgs e)
     {
         if (_busy) return;
+        _profileTimer.Stop();
         _busy = true;
         try
         {
@@ -404,7 +423,7 @@ public partial class MainWindow : Window
             RunningModeText.Text = $"接收器：{ReadConfiguredReceiverName()}";
             RunningModeText.ToolTip = "此处显示接收器进程状态，不代表手机连接状态。";
             RunningDetailText.Text = ReadConfiguredSummary();
-            StartButton.Content = "应用并重启";
+            StartButton.Content = "重启接收器";
         }
         else
         {
@@ -413,8 +432,8 @@ public partial class MainWindow : Window
             HeaderStatusText.Text = "接收器已停止";
             RunningModeText.Text = "接收器未运行";
             RunningModeText.ToolTip = null;
-            RunningDetailText.Text = "选择模式后点击“应用并启动”";
-            StartButton.Content = "应用并启动";
+            RunningDetailText.Text = "选择画质后点击“启动接收器”";
+            StartButton.Content = "启动接收器";
         }
     }
 

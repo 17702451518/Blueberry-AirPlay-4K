@@ -6,7 +6,7 @@
         Width="940" Height="760" MinWidth="760" MinHeight="560"
         WindowStartupLocation="CenterScreen" Background="#F3F8FA"
         FontFamily="Microsoft YaHei UI" UseLayoutRounding="True">
-    <Grid>
+    <Grid Background="#F3F8FA">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -42,7 +42,7 @@
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                       CanContentScroll="False" PanningMode="VerticalOnly" IsDeferredScrollingEnabled="False">
-            <StackPanel Margin="24,20,24,24">
+            <StackPanel x:Name="ContentStack" Margin="24,20,24,24">
                 <Border Style="{StaticResource CardStyle}" Margin="0,0,0,16">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -70,30 +70,38 @@
                         <TextBlock x:Name="DisplayCompatibilityText" Text="当前核心未提供显示控制。请使用新版完整程序包；仅替换控制台无法启用。" TextWrapping="Wrap" Foreground="#B45309" Margin="0,8"/>
                         <StackPanel x:Name="DisplayControls">
                             <TextBlock Text="缩放方式" Margin="0,12,0,5"/>
-                            <ComboBox x:Name="DisplayModeBox" SelectedIndex="2" Padding="8">
-                                <ComboBoxItem Content="原始尺寸（100%）— 1 个视频像素对应 1 个屏幕像素"/>
-                                <ComboBoxItem Content="等比窗口 — 窗口随画面比例调整，普通窗口不增加黑边"/>
-                                <ComboBoxItem Content="适应窗口 — 自由调整窗口，完整显示画面，允许黑边"/>
-                            </ComboBox>
+                            <UniformGrid Columns="3">
+                                <RadioButton x:Name="DisplayOriginal" GroupName="PictureMode" Tag="0" Checked="DisplayChoice_Checked" Style="{StaticResource DisplayChoice}">
+                                    <StackPanel><TextBlock Text="原始尺寸 · 100%" FontWeight="SemiBold"/><TextBlock Text="逐像素显示，可平移查看" TextWrapping="Wrap" FontSize="11" Margin="0,5,0,0"/></StackPanel>
+                                </RadioButton>
+                                <RadioButton x:Name="DisplayAspect" GroupName="PictureMode" Tag="1" Checked="DisplayChoice_Checked" Style="{StaticResource DisplayChoice}">
+                                    <StackPanel><TextBlock Text="等比窗口" FontWeight="SemiBold"/><TextBlock Text="锁定窗口比例，不增加黑边" TextWrapping="Wrap" FontSize="11" Margin="0,5,0,0"/></StackPanel>
+                                </RadioButton>
+                                <RadioButton x:Name="DisplayFit" GroupName="PictureMode" Tag="2" Checked="DisplayChoice_Checked" Style="{StaticResource DisplayChoice}">
+                                    <StackPanel><TextBlock Text="适应窗口" FontWeight="SemiBold"/><TextBlock Text="自由调整窗口，完整显示" TextWrapping="Wrap" FontSize="11" Margin="0,5,0,0"/></StackPanel>
+                                </RadioButton>
+                            </UniformGrid>
                             <TextBlock Text="窗口状态（三种缩放方式均可选择）" Margin="0,12,0,5"/>
-                            <ComboBox x:Name="DisplayStateBox" SelectedIndex="0" Padding="8">
-                                <ComboBoxItem Content="普通窗口"/>
-                                <ComboBoxItem Content="最大化（保留任务栏）"/>
-                                <ComboBoxItem Content="全屏（隐藏任务栏）"/>
-                            </ComboBox>
-                            <TextBlock Text="等比最大化：在工作区内尽可能放大，不改变画面比例。全屏：覆盖整个显示器；比例不一致时保留留白。原始尺寸超出可见区域时可用方向键或滚轮平移，Shift + 滚轮横向平移。" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource MutedTextBrush}" Margin="0,10"/>
-                            <TextBlock Text="F11 切换全屏，Esc 返回普通窗口。100% 指接收画面的像素映射，不代表 AirPlay 编码无损。" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource MutedTextBrush}"/>
-                            <Button Content="应用显示设置（无需重新连接）" Click="ApplyDisplayButton_Click" HorizontalAlignment="Left" Background="#0891B2" Foreground="White" Margin="0,12,0,0"/>
+                            <UniformGrid Columns="3">
+                                <RadioButton x:Name="DisplayNormal" GroupName="PictureState" Tag="0" Checked="DisplayChoice_Checked" Style="{StaticResource DisplayChoice}" Content="普通窗口"/>
+                                <RadioButton x:Name="DisplayMaximized" GroupName="PictureState" Tag="1" Checked="DisplayChoice_Checked" Style="{StaticResource DisplayChoice}" Content="最大化 · 保留任务栏"/>
+                                <RadioButton x:Name="DisplayFullscreen" GroupName="PictureState" Tag="2" Checked="DisplayChoice_Checked" Style="{StaticResource DisplayChoice}" Content="全屏 · 隐藏任务栏"/>
+                            </UniformGrid>
+                            <TextBlock Text="选择后立即生效，无需重新连接。Esc 返回普通窗口。" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource MutedTextBrush}" Margin="0,10,0,0"/>
+                            <Expander Header="显示方式说明" Margin="0,10,0,0" Foreground="{StaticResource MutedTextBrush}">
+                                <TextBlock Text="等比最大化在桌面工作区内按原比例放大；全屏覆盖整个显示器，比例不一致时保留留白。原始尺寸超出可见区域时，可用方向键或滚轮平移，Shift + 滚轮横向平移。100% 为接收画面的像素映射，不代表 AirPlay 编码无损。" TextWrapping="Wrap" FontSize="12" Margin="0,8,0,0"/>
+                            </Expander>
                         </StackPanel>
                     </StackPanel>
                 </Border>
-                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,16">
+                <Border x:Name="QualityCard" Style="{StaticResource CardStyle}" Margin="0,0,0,16">
                     <StackPanel>
                         <TextBlock Text="选择画质与延迟模式" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
-                        <TextBlock Text="标准 4K60 适合日常使用；需要操作响应时可切换低延迟。"
+                        <TextBlock Text="运行中选择画质将自动重启接收器，需在设备上重新连接；显示方式切换不会中断投屏。"
                                    FontSize="13" Foreground="{StaticResource MutedTextBrush}" Margin="0,5,0,15"/>
 
-                        <RadioButton x:Name="Mode4K60Sync" Style="{StaticResource ModeCardRadio}" GroupName="Mode"
+                        <UniformGrid Columns="2">
+                        <RadioButton x:Name="Mode4K60Sync" Style="{StaticResource ModeCardRadio}" GroupName="Mode" Margin="0,0,8,0"
                                      Tag="4k60-sync" IsChecked="True" Checked="Mode_Checked">
                             <StackPanel>
                                 <TextBlock Text="4K60 标准同步" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
@@ -109,6 +117,9 @@
                                            Foreground="{StaticResource MutedTextBrush}" Margin="0,3,0,0"/>
                             </StackPanel>
                         </RadioButton>
+                        </UniformGrid>
+                        <Expander Header="更多画质与实验性高帧率" Margin="0,12,0,0">
+                        <StackPanel Margin="0,8,0,0">
                         <Expander Header="实验性 120 帧" Margin="0,8,0,12">
                             <StackPanel>
                                 <TextBlock Text="实际投屏帧率取决于设备、系统及网络条件，显示屏刷新率不代表投屏帧率。建议优先选择 2K120；如出现画面异常或播放不流畅，请恢复至 4K60 模式。" TextWrapping="Wrap" Margin="0,8"/>
@@ -142,6 +153,8 @@
                                            Foreground="{StaticResource MutedTextBrush}" Margin="0,3,0,0"/>
                             </StackPanel>
                         </RadioButton>
+                        </StackPanel>
+                        </Expander>
                     </StackPanel>
                 </Border>
 

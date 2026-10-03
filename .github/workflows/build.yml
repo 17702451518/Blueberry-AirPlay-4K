@@ -35,5 +35,8 @@ jobs:
       - name: Display settings regression tests
         run: dotnet run --project .\tests\DisplaySettings.Tests\DisplaySettings.Tests.csproj -c Release
 
+      - name: Interface layout and immediate selection tests
+        run: dotnet run --project .\tests\Interface.Tests\Interface.Tests.csproj -c Release
+
       - name: Package isolation and taskbar grouping tests
         run: dotnet run --project .\tests\TaskbarGrouping.Tests\TaskbarGrouping.Tests.csproj -c Release

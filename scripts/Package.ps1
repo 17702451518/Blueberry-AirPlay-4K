@@ -3,7 +3,7 @@ param(
     [Parameter(Mandatory=$true)][string]$OutputDirectory,
     [string]$Dotnet = 'dotnet',
     [string]$DisplayRuntime,
-    [string]$Version = '3.2.0-preview.5'
+    [string]$Version = '3.2.0-preview.6'
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
@@ -18,7 +18,7 @@ if ($DisplayRuntime) {
     if ([IO.File]::ReadAllText((Join-Path $source 'display-control.version')).Trim() -ne '1') { throw 'Unsupported display runtime' }
 } else {
     if (!$BasePackage) { throw 'Provide DisplayRuntime or a legacy BasePackage.' }
-    if ($Version -eq '3.2.0-preview.5') { throw 'preview.5 requires the new DisplayRuntime, not only an updated controller.' }
+    if ($Version -like '3.2.*') { throw '3.2 requires the new DisplayRuntime, not only an updated controller.' }
     $stage = Join-Path $output 'source-package'
     Expand-Archive -LiteralPath $BasePackage -DestinationPath $stage
     $roots = @(Get-ChildItem -LiteralPath $stage -Directory)

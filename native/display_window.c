@@ -16,6 +16,14 @@ static wchar_t command_path[MAX_PATH];
 static unsigned long long last_revision;
 static int rectangle_ok;
 static RECT rendered;
+static int arranging, redraws;
+
+/* ResizeBuffers and child-window moves are asynchronous in D3D11. Redraw
+ * after they finish, including when the sender has stopped sending frames. */
+static void request_redraw(void) {
+    redraws=4;
+    SetTimer(window,2,60,NULL);
+}
 
 static void adjust_frame(RECT *rect,LONG style,HWND hwnd) {
     AdjustWindowRectExForDpi(rect,style,FALSE,0,GetDpiForWindow(hwnd));
@@ -53,8 +61,11 @@ static void resize_window(void) {
     MONITORINFO monitor = {sizeof(MONITORINFO)};
     GetMonitorInfoW(MonitorFromWindow(window, MONITOR_DEFAULTTONEAREST), &monitor);
     LONG style = state == 2 ? WS_POPUP : WS_OVERLAPPEDWINDOW;
+    arranging=1;
+    /* SetWindowPos alone does not clear WS_MAXIMIZE or restore placement. */
+    if(IsZoomed(window) || IsIconic(window))ShowWindow(window,SW_RESTORE);
     SetWindowLongPtrW(window, GWL_STYLE, style);
-    if(state==1){ShowWindow(window,SW_MAXIMIZE);viewport();return;}
+    if(state==1){ShowWindow(window,SW_MAXIMIZE);arranging=0;viewport();request_redraw();return;}
     RECT area = state == 2 ? monitor.rcMonitor : monitor.rcWork;
     if (state == 0) {
         if (mode == 0) {
@@ -86,7 +97,7 @@ static void resize_window(void) {
             area.left+(area.right-area.left-w)/2,area.top+(area.bottom-area.top-h)/2,
             w,h,SWP_FRAMECHANGED|SWP_NOACTIVATE);
     }
-    viewport();
+    arranging=0;viewport();request_redraw();
 }
 
 static void apply_display(int m,int s) {
@@ -110,6 +121,7 @@ static LRESULT CALLBACK procedure(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
         video_w=(int)wp;video_h=(int)lp;pan_x=pan_y=0;
         resize_window();ShowWindow(hwnd,SW_SHOWNOACTIVATE);return 0;
     case WM_TIMER: {
+        if(wp==2){viewport();if(--redraws<=0)KillTimer(hwnd,2);return 0;}
         int m,s;unsigned long long revision;FILE *f=_wfopen(command_path,L"r");
         if(f) {int n=fscanf(f,"%d %d %llu",&m,&s,&revision);fclose(f);
             if(n==3 && m>=0 && m<=2 && s>=0 && s<=2 && revision!=last_revision) {
@@ -123,7 +135,6 @@ static LRESULT CALLBACK procedure(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
         break;
     case WM_KEYDOWN:
         if(wp==VK_ESCAPE && state!=0) {state=0;resize_window();return 0;}
-        if(wp==VK_F11) {if(state==0)GetWindowRect(hwnd,&restored);state=state==2?0:2;resize_window();return 0;}
         if(mode==0) {
             if(wp==VK_LEFT)pan_x-=50;if(wp==VK_RIGHT)pan_x+=50;
             if(wp==VK_UP)pan_y-=50;if(wp==VK_DOWN)pan_y+=50;viewport();
@@ -142,6 +153,15 @@ static LRESULT CALLBACK procedure(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
             int fw=frame.right-frame.left,fh=frame.bottom-frame.top;
             int aw=monitor.rcWork.right-monitor.rcWork.left,ah=monitor.rcWork.bottom-monitor.rcWork.top;
             int caption=fh-fw;
+            if(mode==1){
+                double minimum=(240-fw)/(double)video_w;
+                if((160-fh)/(double)video_h>minimum)minimum=(160-fh)/(double)video_h;
+                info->ptMinTrackSize.x=(int)(video_w*minimum+0.5)+fw;
+                info->ptMinTrackSize.y=(int)(video_h*minimum+0.5)+fh;
+                /* Default independent desktop limits clamp one edge after
+                 * WM_SIZING and break the ratio for portrait streams. */
+                info->ptMaxTrackSize.x=100000;info->ptMaxTrackSize.y=100000;
+            }
             double scale=aw/(double)video_w;
             if((ah-caption)/(double)video_h<scale)scale=(ah-caption)/(double)video_h;
             int cw=mode==1?(int)(video_w*scale):aw,ch=mode==1?(int)(video_h*scale):ah-caption;
@@ -151,19 +171,39 @@ static LRESULT CALLBACK procedure(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
         }
         if(mode==0 && state==0 && video_w>0) {info->ptMaxTrackSize.x=video_w+100>240?video_w+100:240;info->ptMaxTrackSize.y=video_h+100>160?video_h+100:160;}
         break; }
+    case WM_ENTERSIZEMOVE:
+        if(!IsZoomed(hwnd) && state!=2)state=0;
+        break;
     case WM_SIZING:
-        if(mode==1 && state==0 && video_w>0 && video_h>0) {
+        if(mode==1 && state!=2 && !IsZoomed(hwnd) && video_w>0 && video_h>0) {
+            state=0;
             RECT *r=(RECT*)lp,frame={0,0,0,0};adjust_frame(&frame,GetWindowLongPtrW(hwnd,GWL_STYLE),hwnd);
             int fw=frame.right-frame.left,fh=frame.bottom-frame.top;
-            if(wp==WMSZ_TOP || wp==WMSZ_BOTTOM)r->right=r->left+(int)((r->bottom-r->top-fh)*(double)video_w/video_h)+fw;
-            else {int h=(int)((r->right-r->left-fw)*(double)video_h/video_w)+fh;
+            if(wp==WMSZ_TOP || wp==WMSZ_BOTTOM)r->right=r->left+(int)((r->bottom-r->top-fh)*(double)video_w/video_h+0.5)+fw;
+            else {int h=(int)((r->right-r->left-fw)*(double)video_h/video_w+0.5)+fh;
                 if(wp==WMSZ_TOPLEFT || wp==WMSZ_TOPRIGHT)r->top=r->bottom-h;else r->bottom=r->top+h;}
             return TRUE;
         }break;
+    case WM_WINDOWPOSCHANGING: {
+        WINDOWPOS *pos=(WINDOWPOS*)lp;
+        /* Also constrain programmatic/snap resizing, not only WM_SIZING.
+         * Native maximize and our fullscreen layout have their own rules. */
+        if(!arranging && mode==1 && state!=2 && !IsZoomed(hwnd) &&
+           !(pos->flags&SWP_NOSIZE) && video_w>0 && video_h>0) {
+            RECT frame={0,0,0,0},current;
+            adjust_frame(&frame,GetWindowLongPtrW(hwnd,GWL_STYLE),hwnd);
+            GetWindowRect(hwnd,&current);
+            int fw=frame.right-frame.left,fh=frame.bottom-frame.top;
+            if(pos->cx==current.right-current.left)
+                pos->cx=(int)((pos->cy-fh)*(double)video_w/video_h+0.5)+fw;
+            else pos->cy=(int)((pos->cx-fw)*(double)video_h/video_w+0.5)+fh;
+            state=0;
+        }break; }
     case WM_EXITSIZEMOVE:
-        if(state==0)GetWindowRect(hwnd,&restored);return 0;
+        if(state==0)GetWindowRect(hwnd,&restored);request_redraw();return 0;
     case WM_DPICHANGED: if(state==0)restored=*(RECT*)lp;resize_window();return 0;
-    case WM_SIZE: if(wp!=SIZE_MINIMIZED)viewport();return 0;
+    case WM_SIZE: if(wp!=SIZE_MINIMIZED){viewport();request_redraw();}return 0;
+    case WM_SHOWWINDOW: if(wp)request_redraw();break;
     case WM_ACTIVATE:
         if(state==2)SetWindowPos(hwnd,LOWORD(wp)==WA_INACTIVE?HWND_NOTOPMOST:HWND_TOPMOST,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE);
         break;

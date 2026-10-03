@@ -4,6 +4,8 @@
 
 `upstream-main.patch` 同时关闭新版上游默认开启的磁盘会话日志，保持项目不保存运行历史的策略；不会删除其他版本的日志。
 
+`upstream-ui.patch` 汉化接收核心的设置窗口与托盘菜单，并移除默认禁用日志的入口。
+
 固定源码版本：
 
 - uxplay-windows：`f76fe48400916449fd601b1c0444021aaf517082`（https://github.com/leapbtw/uxplay-windows/tree/f76fe48400916449fd601b1c0444021aaf517082）
@@ -20,11 +22,11 @@
 
 ## 控制与测试
 
-`display-mode.txt` 是包内的普通显示设置，不含凭据：`缩放方式 窗口状态 命令序号`。编号均为 0—2，顺序对应界面。每次应用更新序号；F11/Esc 的窗口状态不会被旧命令重复覆盖。仅支持已标记 `display-control.version` 的核心。
+`display-mode.txt` 是包内的普通显示设置，不含凭据：`缩放方式 窗口状态 命令序号`。编号均为 0—2，顺序对应界面。每次选择更新序号；Esc 的窗口状态不会被旧命令重复覆盖。仅支持已标记 `display-control.version` 的核心。
 
 尺寸从渲染端实际协商的 caps 获取，不使用 4K/2K 预设猜测。窗口线程采用 Per-Monitor-V2 DPI 感知。原始尺寸的渲染子窗口保持视频像素大小，超出父窗口区域时裁切可见区域并允许平移，不改变视频比例或解码分辨率。
 
-`display_smoke.c` 使用本机 D3D11 和测试画面检查 36 个横竖屏组合、窗口区域、渲染矩形及全屏快捷键，不启用 AirPlay，不写手机或用户接收设置：
+`display_smoke.c` 使用本机 D3D11 和测试画面检查 36 个横竖屏组合、窗口区域、渲染矩形、暂停画面的实际像素及八个方向的等比拖动，不启用 AirPlay，不写手机或用户接收设置：
 
 ```sh
 gcc -DBLUEBERRY_TEST -O2 native/display_window.c native/display_smoke.c \
