@@ -86,6 +86,15 @@
                                            Foreground="{StaticResource MutedTextBrush}" Margin="0,3,0,0"/>
                             </StackPanel>
                         </RadioButton>
+                        <Expander Header="实验性 120 帧" Margin="0,8,0,12">
+                            <StackPanel>
+                                <TextBlock Text="实际投屏帧率取决于设备、系统及网络条件，显示屏刷新率不代表投屏帧率。建议优先选择 2K120；如出现画面异常或播放不流畅，请恢复至 4K60 模式。" TextWrapping="Wrap" Margin="0,8"/>
+                                <RadioButton x:Name="Mode2K120" Style="{StaticResource ModeCardRadio}" GroupName="Mode"
+                                             Tag="2k120-experimental" Checked="Mode_Checked" Content="2K120 实验性 · HEVC · 低延迟"/>
+                                <RadioButton x:Name="Mode4K120" Style="{StaticResource ModeCardRadio}" GroupName="Mode"
+                                             Tag="4k120-experimental" Checked="Mode_Checked" Content="4K120 实验性 · HEVC · 高负载"/>
+                            </StackPanel>
+                        </Expander>
                         <RadioButton x:Name="Mode4K30" Style="{StaticResource ModeCardRadio}" GroupName="Mode"
                                      Tag="4k30" Checked="Mode_Checked">
                             <StackPanel>
@@ -163,7 +172,7 @@
                            FontSize="12" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Content="打开目录" Background="#E7EFF3" Foreground="#385367" Margin="0,0,9,0" Click="OpenFolderButton_Click"/>
-                    <Button Content="停止" Background="#FDEBEC" Foreground="#B4232F" Margin="0,0,9,0" Click="StopButton_Click"/>
+                    <Button x:Name="StopButton" Content="停止" Background="#FDEBEC" Foreground="#B4232F" Margin="0,0,9,0" Click="StopButton_Click"/>
                     <Button x:Name="StartButton" Content="应用并启动" Background="#0891B2" Foreground="White" Click="StartButton_Click"/>
                 </StackPanel>
             </Grid>

@@ -11,42 +11,7 @@ namespace BlueberryAirPlay4K;
 
 public partial class MainWindow : Window
 {
-    private sealed record ReceiverProfile(string Id, string Title, string ReceiverName, string Arguments, string Summary);
-
-    private static readonly IReadOnlyDictionary<string, ReceiverProfile> Profiles =
-        new Dictionary<string, ReceiverProfile>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["4k60-sync"] = new(
-                "4k60-sync",
-                "4K60 标准同步",
-                "蓝莓投屏-4K60",
-                "-n 蓝莓投屏-4K60 -nh -h265 -s 3840x2160@60 -fps 60 -vsync -nofreeze -FPSdata",
-                "HEVC 4K60请求 · D3D11 · 时间戳音画同步"),
-            ["4k60-low"] = new(
-                "4k60-low",
-                "4K60 低延迟互动",
-                "蓝莓投屏-4K60-低延迟",
-                "-n 蓝莓投屏-4K60-低延迟 -nh -h265 -s 3840x2160@60 -fps 60 -vsync no -nofreeze -FPSdata",
-                "HEVC 4K60请求 · D3D11 · 到帧尽快显示"),
-            ["4k30"] = new(
-                "4k30",
-                "4K30 稳定兼容",
-                "蓝莓投屏-4K30",
-                "-n 蓝莓投屏-4K30 -nh -h265 -s 3840x2160@60 -fps 30 -vsync -nofreeze -FPSdata",
-                "HEVC 4K30请求 · D3D11 · 稳定优先"),
-            ["2k60"] = new(
-                "2k60",
-                "2K60 中间档",
-                "蓝莓投屏-2K60",
-                "-n 蓝莓投屏-2K60 -nh -h265 -s 2560x1440@60 -fps 60 -vsync -nofreeze -FPSdata",
-                "HEVC 2K60请求 · D3D11 · 中等网络负载"),
-            ["1080p60"] = new(
-                "1080p60",
-                "1080P60 H.264回退",
-                "蓝莓投屏-1080P60",
-                "-n 蓝莓投屏-1080P60 -nh -s 1920x1080@60 -fps 60 -vsync -nofreeze -FPSdata",
-                "H.264 1080P60请求 · D3D11 · 兼容排查"),
-        };
+    private static readonly IReadOnlyDictionary<string, ReceiverProfile> Profiles = ReceiverProfiles.All;
 
     private readonly DispatcherTimer _statusTimer;
     private readonly StartupSettings _startupSettings = new();
@@ -54,8 +19,9 @@ public partial class MainWindow : Window
     private bool _busy;
     private string _selectedProfileId = "4k60-sync";
 
-    private string PackageRoot => AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
-    private string EnginePath => Path.Combine(PackageRoot, "uxplay-windows.exe");
+    private readonly PackageLayout _layout = new(AppContext.BaseDirectory);
+    private string PackageRoot => _layout.Root;
+    private string EnginePath => _layout.Engine;
     private static string UserConfigDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "leapbtw", "uxplay-windows");
     private static string UserConfigPath => Path.Combine(UserConfigDirectory, "arguments.txt");
@@ -63,6 +29,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        SourceInitialized += (_, _) => TaskbarGrouping.TryApply(new System.Windows.Interop.WindowInteropHelper(this).Handle);
         SelectProfileFromExistingConfig();
         LoadAutostartState();
         _loading = false;
@@ -72,6 +39,7 @@ public partial class MainWindow : Window
         _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _statusTimer.Tick += (_, _) => UpdateStatus();
         _statusTimer.Start();
+        Closed += (_, _) => _statusTimer.Stop();
     }
 
     private ReceiverProfile SelectedProfile => Profiles[_selectedProfileId];
@@ -91,6 +59,10 @@ public partial class MainWindow : Window
     private async void StartButton_Click(object sender, RoutedEventArgs e)
     {
         if (_busy) return;
+        if (_selectedProfileId.EndsWith("-experimental", StringComparison.Ordinal) &&
+            MessageBox.Show(this,
+                "此模式向发送设备请求最高 120 FPS，实际投屏帧率取决于设备、系统及网络条件。\n\n建议优先选择 2K120。若出现画面异常、播放不流畅或音画不同步，请恢复至 4K60 标准同步模式。\n\n是否应用此实验性模式？",
+                "实验性高帧率模式", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes) return;
         _busy = true;
         StartButton.IsEnabled = false;
         FooterText.Text = "正在应用配置并启动……";
@@ -117,7 +89,7 @@ public partial class MainWindow : Window
             Process.Start(new ProcessStartInfo
             {
                 FileName = EnginePath,
-                WorkingDirectory = PackageRoot,
+                WorkingDirectory = _layout.Runtime,
                 UseShellExecute = true,
             });
 
@@ -244,6 +216,8 @@ public partial class MainWindow : Window
                 case "4k30": Mode4K30.IsChecked = true; break;
                 case "2k60": Mode2K60.IsChecked = true; break;
                 case "1080p60": Mode1080P60.IsChecked = true; break;
+                case "2k120-experimental": Mode2K120.IsChecked = true; break;
+                case "4k120-experimental": Mode4K120.IsChecked = true; break;
             }
         }
         catch
@@ -282,9 +256,9 @@ public partial class MainWindow : Window
         string[] required =
         {
             EnginePath,
-            Path.Combine(PackageRoot, "lib", "gstreamer-1.0", "libgstlibav.dll"),
-            Path.Combine(PackageRoot, "lib", "gstreamer-1.0", "libgstvideoparsersbad.dll"),
-            Path.Combine(PackageRoot, "lib", "gstreamer-1.0", "libgstd3d11.dll"),
+            Path.Combine(_layout.Runtime, "lib", "gstreamer-1.0", "libgstlibav.dll"),
+            Path.Combine(_layout.Runtime, "lib", "gstreamer-1.0", "libgstvideoparsersbad.dll"),
+            Path.Combine(_layout.Runtime, "lib", "gstreamer-1.0", "libgstd3d11.dll"),
         };
 
         string? missing = required.FirstOrDefault(path => !File.Exists(path));
@@ -344,7 +318,7 @@ public partial class MainWindow : Window
                 try
                 {
                     string? path = process.MainModule?.FileName;
-                    if (path is not null && path.StartsWith(PackageRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    if (path is not null && _layout.OwnsProcess(path))
                     {
                         result.Add(process);
                     }
@@ -366,7 +340,7 @@ public partial class MainWindow : Window
             try
             {
                 string? path = process.MainModule?.FileName;
-                if (path is not null && !path.StartsWith(PackageRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                if (path is not null && !_layout.OwnsProcess(path))
                 {
                     paths.Add(path);
                 }
@@ -398,13 +372,20 @@ public partial class MainWindow : Window
 
     private void UpdateStatus()
     {
+        var groupedProcesses = FindOurProcesses();
+        try { TaskbarGrouping.ApplyToProcesses(groupedProcesses.Select(p => p.Id).ToHashSet()); }
+        finally { foreach (var process in groupedProcesses) process.Dispose(); }
         bool running = IsOurEngineRunning();
+        StopButton.Background = new SolidColorBrush(running ? Color.FromRgb(220, 38, 38) : Color.FromRgb(253, 235, 236));
+        StopButton.Foreground = new SolidColorBrush(running ? Colors.White : Color.FromRgb(180, 35, 47));
         if (running)
         {
             HeaderStatusDot.Fill = new SolidColorBrush(Color.FromRgb(34, 197, 94));
             RunningAccent.Background = new SolidColorBrush(Color.FromRgb(8, 145, 178));
             HeaderStatusText.Text = "接收器运行中";
-            RunningModeText.Text = $"正在等待连接：{ReadConfiguredReceiverName()}";
+            // Process liveness does not establish whether an AirPlay session exists.
+            RunningModeText.Text = $"接收器：{ReadConfiguredReceiverName()}";
+            RunningModeText.ToolTip = "此处显示接收器进程状态，不代表手机连接状态。";
             RunningDetailText.Text = ReadConfiguredSummary();
             StartButton.Content = "应用并重启";
         }
@@ -414,6 +395,7 @@ public partial class MainWindow : Window
             RunningAccent.Background = new SolidColorBrush(Color.FromRgb(148, 163, 184));
             HeaderStatusText.Text = "接收器已停止";
             RunningModeText.Text = "接收器未运行";
+            RunningModeText.ToolTip = null;
             RunningDetailText.Text = "选择模式后点击“应用并启动”";
             StartButton.Content = "应用并启动";
         }
