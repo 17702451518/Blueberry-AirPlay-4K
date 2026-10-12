@@ -16,6 +16,24 @@ internal static class Program
         {
             var stack = (StackPanel)window.FindName("ContentStack");
             if (stack.Children[0] != window.FindName("QualityCard")) throw new Exception("Quality must come first");
+            var nameInput = (TextBox)window.FindName("ReceiverNameInput");
+            var namePreview = (TextBlock)window.FindName("ReceiverNamePreview");
+            var saveName = (Button)window.FindName("SaveNameButton");
+            string originalName = nameInput.Text;
+            nameInput.Text = "";
+            if (!namePreview.Text.StartsWith(Environment.MachineName + "-", StringComparison.Ordinal))
+                throw new Exception("Default preview does not use computer name");
+            nameInput.Text = "客厅电脑";
+            if (!namePreview.Text.StartsWith("客厅电脑-", StringComparison.Ordinal) || !saveName.IsEnabled)
+                throw new Exception("Custom name preview invalid");
+            nameInput.Text = "oops\" -fps 999";
+            if (saveName.IsEnabled || ((TextBlock)window.FindName("NameValidationText")).Visibility != Visibility.Visible)
+                throw new Exception("Invalid input can be saved");
+            nameInput.Text = "客厅电脑";
+            ((RadioButton)window.FindName("Mode4K60Low")).IsChecked = true;
+            if (namePreview.Text != "客厅电脑-4K60-低延迟") throw new Exception("Name suffix not updated with profile");
+            nameInput.Text = originalName;
+            Console.WriteLine("PASS: device/custom naming preview, invalid input blocking, immediate mode suffix");
             ((RadioButton)window.FindName("DisplayAspect")).IsChecked = true;
             var display = new DisplaySettings(AppContext.BaseDirectory);
             if (display.Read().Mode != PictureMode.AspectWindow) throw new Exception("Mode not applied immediately");
@@ -48,6 +66,20 @@ internal static class Program
                 var bitmap = new RenderTargetBitmap(940,760,96,96,System.Windows.Media.PixelFormats.Pbgra32);
                 bitmap.Render(content); var encoder = new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));
                 using var stream = File.Create(args[0]);encoder.Save(stream);
+            }
+            if (args.Length > 1)
+            {
+                nameInput.Text = "客厅电脑";
+                var nameCard = (Border)window.FindName("ReceiverNameCard");
+                System.Windows.DependencyObject? ancestor = nameCard;
+                while (ancestor is not null && ancestor is not ScrollViewer)
+                    ancestor = System.Windows.Media.VisualTreeHelper.GetParent(ancestor);
+                var scroll = (ScrollViewer)(ancestor ?? throw new Exception("Missing scroll viewer"));
+                scroll.ScrollToVerticalOffset(nameCard.TranslatePoint(new Point(), stack).Y);
+                content.UpdateLayout();
+                var bitmap = new RenderTargetBitmap(940,760,96,96,System.Windows.Media.PixelFormats.Pbgra32);
+                bitmap.Render(content); var encoder = new PngBitmapEncoder();encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                using var stream = File.Create(args[1]);encoder.Save(stream);
             }
             Console.WriteLine("PASS: quality first; immediate mode/state selection; WPF layout render");
         }

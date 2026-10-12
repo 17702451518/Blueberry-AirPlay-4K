@@ -15,6 +15,9 @@ public partial class MainWindow : Window
 
     private readonly DispatcherTimer _statusTimer;
     private readonly StartupSettings _startupSettings = new();
+    private readonly ReceiverNameSettings _nameSettings = new(Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "BlueberryAirPlay4K", "receiver-name.txt"));
+    private string _customReceiverName = "";
     private bool _loading = true;
     private bool _busy;
     private PictureMode _pictureMode = PictureMode.FitWindow;
@@ -36,6 +39,8 @@ public partial class MainWindow : Window
         ContentStack.Children.Insert(0, QualityCard);
         SourceInitialized += (_, _) => TaskbarGrouping.TryApply(new System.Windows.Interop.WindowInteropHelper(this).Handle);
         SelectProfileFromExistingConfig();
+        _customReceiverName = _nameSettings.Read();
+        ReceiverNameInput.Text = _customReceiverName;
         LoadAutostartState();
         var display = new DisplaySettings(_layout.Runtime);
         var savedDisplay = display.Read();
@@ -62,6 +67,41 @@ public partial class MainWindow : Window
     }
 
     private ReceiverProfile SelectedProfile => Profiles[_selectedProfileId];
+    private string SelectedReceiverName => ReceiverNames.BuildName(SelectedProfile, _customReceiverName, Environment.MachineName);
+
+    private void ReceiverNameInput_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (!_loading) UpdateSelectedProfileText();
+    }
+
+    private void SaveReceiverName()
+    {
+        if (!ReceiverNames.TryNormalizeCustom(ReceiverNameInput.Text, out string normalized, out string error))
+            throw new ArgumentException(error);
+        if (normalized != _customReceiverName) _nameSettings.Save(normalized);
+        _customReceiverName = normalized;
+        ReceiverNameInput.Text = normalized;
+        UpdateSelectedProfileText();
+    }
+
+    private void SaveReceiverNameButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_busy) return;
+        try
+        {
+            SaveReceiverName();
+            if (IsOurEngineRunning()) StartButton_Click(sender, e);
+            else
+            {
+                WriteSelectedConfiguration();
+                FooterText.Text = "投屏名称已保存，启动接收器后生效。";
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "名称保存失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
 
     private void DisplayChoice_Checked(object sender, RoutedEventArgs e)
     {
@@ -98,6 +138,8 @@ public partial class MainWindow : Window
         if (_busy) return;
         _busy = true;
         StartButton.IsEnabled = false;
+        SaveNameButton.IsEnabled = false;
+        ReceiverNameInput.IsEnabled = false;
         FooterText.Text = "正在应用配置并启动……";
 
         try
@@ -115,6 +157,7 @@ public partial class MainWindow : Window
                 return;
             }
 
+            SaveReceiverName();
             await StopOurProcessesAsync();
             WriteSelectedConfiguration();
             var display = new DisplaySettings(_layout.Runtime);
@@ -134,7 +177,7 @@ public partial class MainWindow : Window
                 throw new InvalidOperationException("接收核心启动后立即退出。请检查Windows安全提示或Bonjour服务状态。");
             }
 
-            FooterText.Text = $"已启动：{SelectedProfile.ReceiverName}";
+            FooterText.Text = $"已启动：{SelectedReceiverName}";
             UpdateStatus();
         }
         catch (Exception ex)
@@ -146,6 +189,8 @@ public partial class MainWindow : Window
         {
             _busy = false;
             StartButton.IsEnabled = true;
+            ReceiverNameInput.IsEnabled = true;
+            UpdateSelectedProfileText();
         }
     }
 
@@ -196,6 +241,7 @@ public partial class MainWindow : Window
                 if (answer != MessageBoxResult.Yes) return;
 
                 ValidatePackage();
+                SaveReceiverName();
                 WriteSelectedConfiguration();
                 ConfigureRenderer();
                 _startupSettings.Enable(EnginePath);
@@ -240,8 +286,7 @@ public partial class MainWindow : Window
         {
             if (!File.Exists(UserConfigPath)) return;
             string content = File.ReadAllText(UserConfigPath).Trim();
-            ReceiverProfile? match = Profiles.Values.FirstOrDefault(profile =>
-                string.Equals(profile.Arguments, content, StringComparison.Ordinal));
+            ReceiverProfile? match = ReceiverNames.ParseConfiguration(content).Profile;
             if (match is null) return;
 
             _selectedProfileId = match.Id;
@@ -308,7 +353,7 @@ public partial class MainWindow : Window
     {
         Directory.CreateDirectory(UserConfigDirectory);
         string tempPath = UserConfigPath + ".tmp";
-        File.WriteAllText(tempPath, SelectedProfile.Arguments + Environment.NewLine, new UTF8Encoding(false));
+        File.WriteAllText(tempPath, ReceiverNames.BuildArguments(SelectedProfile, _customReceiverName, Environment.MachineName) + Environment.NewLine, new UTF8Encoding(false));
         File.Move(tempPath, UserConfigPath, true);
     }
 
@@ -403,7 +448,16 @@ public partial class MainWindow : Window
 
     private void UpdateSelectedProfileText()
     {
-        SelectedArgsText.Text = $"将公布：{SelectedProfile.ReceiverName}\n参数：{SelectedProfile.Arguments}";
+        bool valid = ReceiverNames.TryNormalizeCustom(ReceiverNameInput.Text, out string normalized, out string error);
+        NameValidationText.Text = error;
+        NameValidationText.Visibility = valid ? Visibility.Collapsed : Visibility.Visible;
+        SaveNameButton.IsEnabled = valid && !_busy;
+        ReceiverNamePreview.Text = valid
+            ? ReceiverNames.BuildName(SelectedProfile, normalized, Environment.MachineName)
+            : "请修正名称后再保存";
+        SelectedArgsText.Text = valid
+            ? $"将公布：{ReceiverNamePreview.Text}\n参数：{ReceiverNames.BuildArguments(SelectedProfile, normalized, Environment.MachineName)}"
+            : "名称无效，无法生成启动参数。";
     }
 
     private void UpdateStatus()
@@ -439,8 +493,17 @@ public partial class MainWindow : Window
 
     private string ReadConfiguredReceiverName()
     {
-        ReceiverProfile? profile = ReadConfiguredProfile();
-        return profile?.ReceiverName ?? "自定义或旧配置";
+        try
+        {
+            if (File.Exists(UserConfigPath))
+            {
+                string name = ReceiverNames.ParseConfiguration(File.ReadAllText(UserConfigPath)).Name;
+                if (name.Length > 0) return name;
+            }
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+        return "自定义或旧配置";
     }
 
     private string ReadConfiguredSummary()
@@ -455,8 +518,7 @@ public partial class MainWindow : Window
         {
             if (!File.Exists(UserConfigPath)) return null;
             string content = File.ReadAllText(UserConfigPath).Trim();
-            return Profiles.Values.FirstOrDefault(profile =>
-                string.Equals(profile.Arguments, content, StringComparison.Ordinal));
+            return ReceiverNames.ParseConfiguration(content).Profile;
         }
         catch
         {

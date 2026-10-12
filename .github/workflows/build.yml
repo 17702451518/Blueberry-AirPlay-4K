@@ -35,6 +35,9 @@ jobs:
       - name: Display settings regression tests
         run: dotnet run --project .\tests\DisplaySettings.Tests\DisplaySettings.Tests.csproj -c Release
 
+      - name: Receiver name validation and migration tests
+        run: dotnet run --project .\tests\ReceiverNames.Tests\ReceiverNames.Tests.csproj -c Release
+
       - name: Interface layout and immediate selection tests
         run: dotnet run --project .\tests\Interface.Tests\Interface.Tests.csproj -c Release
 

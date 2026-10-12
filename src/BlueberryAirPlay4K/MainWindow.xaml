@@ -54,7 +54,7 @@
                         <StackPanel Grid.Column="1" Margin="15,0,16,0">
                             <TextBlock Text="接收状态" FontSize="12" Foreground="#7890A3"/>
                             <TextBlock x:Name="RunningModeText" Text="接收器未运行" FontSize="19" FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextBrush}" Margin="0,4,0,0"/>
+                                       Foreground="{StaticResource TextBrush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
                             <TextBlock x:Name="RunningDetailText" Text="选择模式后点击启动" FontSize="13"
                                        Foreground="{StaticResource MutedTextBrush}" Margin="0,5,0,0" TextWrapping="Wrap"/>
                         </StackPanel>
@@ -98,7 +98,7 @@
                     <StackPanel>
                         <TextBlock Text="选择画质与延迟模式" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
                         <TextBlock Text="运行中选择画质将自动重启接收器，需在设备上重新连接；显示方式切换不会中断投屏。"
-                                   FontSize="13" Foreground="{StaticResource MutedTextBrush}" Margin="0,5,0,15"/>
+                                   FontSize="13" Foreground="{StaticResource MutedTextBrush}" Margin="0,5,0,15" TextWrapping="Wrap"/>
 
                         <UniformGrid Columns="2">
                         <RadioButton x:Name="Mode4K60Sync" Style="{StaticResource ModeCardRadio}" GroupName="Mode" Margin="0,0,4,0"
@@ -155,6 +155,25 @@
                         </RadioButton>
                         </StackPanel>
                         </Expander>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="ReceiverNameCard" Style="{StaticResource CardStyle}" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="投屏名称" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}"/>
+                        <TextBlock Text="默认使用电脑名称，并自动附加投屏模式。同一网络中的电脑可分别设置易于辨认的名称。"
+                                   Foreground="{StaticResource MutedTextBrush}" FontSize="13" TextWrapping="Wrap" Margin="0,5,0,12"/>
+                        <TextBlock Text="自定义名称（留空使用电脑名称）" FontSize="12" Margin="0,0,0,5"/>
+                        <TextBox x:Name="ReceiverNameInput" TextChanged="ReceiverNameInput_TextChanged" FontSize="14"
+                                 Padding="12,9" BorderBrush="#B8CFDC" BorderThickness="1" Background="#F8FBFD"
+                                 AutomationProperties.Name="自定义投屏名称"/>
+                        <TextBlock x:Name="NameValidationText" Foreground="#B4232F" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0" Visibility="Collapsed"/>
+                        <TextBlock Text="手机“屏幕镜像”中将显示：" Foreground="{StaticResource MutedTextBrush}" FontSize="12" Margin="0,12,0,4"/>
+                        <TextBlock x:Name="ReceiverNamePreview" FontSize="15" FontWeight="SemiBold" Foreground="#0E7490" TextWrapping="Wrap"/>
+                        <TextBlock Text="以文字或数字开头，支持文字、数字、空格和 - _ . ( )（）。最多 32 个字符，中文通常不超过 11 字。启动或保存时应用；运行中保存会重启接收器，需重新连接。"
+                                   Foreground="{StaticResource MutedTextBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                        <Button x:Name="SaveNameButton" Content="保存投屏名称" HorizontalAlignment="Left" Background="#0891B2" Foreground="White"
+                                Margin="0,12,0,0" Click="SaveReceiverNameButton_Click"/>
                     </StackPanel>
                 </Border>
 
