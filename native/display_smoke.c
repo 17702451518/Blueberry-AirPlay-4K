@@ -21,6 +21,13 @@ static int visible_white_frame(HWND window,const char *label) {
     return pixel!=CLR_INVALID && GetRValue(pixel)>200 && GetGValue(pixel)>200 && GetBValue(pixel)>200;
 }
 
+static BOOL CALLBACK find_own_window(HWND window,LPARAM result) {
+    DWORD pid;GetWindowThreadProcessId(window,&pid);
+    wchar_t name[64];GetClassNameW(window,name,64);
+    if(pid==GetCurrentProcessId() && wcscmp(name,L"BlueberryVideoWindow")==0){*(HWND*)result=window;return FALSE;}
+    return TRUE;
+}
+
 int main(int argc,char **argv) {
     SetProcessDpiAwarenessContext((HANDLE)-4);
     gst_init(&argc,&argv);
@@ -35,7 +42,7 @@ int main(int argc,char **argv) {
         gst_element_set_state(pipeline,GST_STATE_PLAYING);
         if(gst_element_get_state(pipeline,NULL,NULL,10*GST_SECOND)==GST_STATE_CHANGE_FAILURE)return 2;
         Sleep(600);
-        HWND window=FindWindowW(L"BlueberryVideoWindow",NULL);if(!window)return 3;
+        HWND window=NULL;EnumWindows(find_own_window,(LPARAM)&window);if(!window)return 3;
         /* A paused stream cannot conceal a failed redraw with its next frame. */
         gst_element_set_state(pipeline,GST_STATE_PAUSED);
         gst_element_get_state(pipeline,NULL,NULL,5*GST_SECOND);

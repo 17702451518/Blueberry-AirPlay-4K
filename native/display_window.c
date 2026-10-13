@@ -10,6 +10,8 @@ static HANDLE ready;
 static INIT_ONCE initialized = INIT_ONCE_STATIC_INIT;
 static CRITICAL_SECTION lock;
 static GstElement *sink;
+static guint generation;
+typedef struct { guint generation; int width, height; } Dimensions;
 static int video_w, video_h, mode = 2, state, pan_x, pan_y;
 static RECT restored = {100,100,1000,800};
 static wchar_t command_path[MAX_PATH];
@@ -17,6 +19,34 @@ static unsigned long long last_revision;
 static int rectangle_ok;
 static RECT rendered;
 static int arranging, redraws;
+
+static int active_generation(guint expected) {
+    EnterCriticalSection(&lock);
+    int active=sink!=NULL && generation==expected;
+    LeaveCriticalSection(&lock);
+    return active;
+}
+
+static void post_dimensions(int width,int height,guint expected) {
+    if(width<=0 || height<=0 || !active_generation(expected))return;
+    Dimensions *dimensions=g_new(Dimensions,1);
+    *dimensions=(Dimensions){expected,width,height};
+    if(!PostMessageW(window,WM_APP+1,0,(LPARAM)dimensions))g_free(dimensions);
+}
+
+/* Called by the pipeline thread. Only the currently attached sink can end
+ * the session; inactive codec pipelines must not hide another stream. */
+static void release_sink(GstObject *source) {
+    EnterCriticalSection(&lock);
+    GstElement *previous=sink && GST_OBJECT(sink)==source ? sink : NULL;
+    guint revision=generation;
+    if(previous){sink=NULL;revision=++generation;}
+    LeaveCriticalSection(&lock);
+    if(previous){
+        PostMessageW(window,WM_APP+4,revision,0);
+        gst_object_unref(previous);
+    }
+}
 
 /* ResizeBuffers and child-window moves are asynchronous in D3D11. Redraw
  * after they finish, including when the sender has stopped sending frames. */
@@ -110,7 +140,10 @@ static void resize_window(void) {
 
 static void apply_display(int m,int s) {
     if(state==0 && s!=0)GetWindowRect(window,&restored);
-    mode=m;state=s;pan_x=pan_y=0;resize_window();
+    mode=m;state=s;pan_x=pan_y=0;
+    EnterCriticalSection(&lock);int active=sink!=NULL;LeaveCriticalSection(&lock);
+    if(!active)return;
+    resize_window();
     if(video_w>0){ShowWindow(window,SW_SHOW);SetForegroundWindow(window);}
 }
 
@@ -124,10 +157,36 @@ static LRESULT CALLBACK procedure(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
         values[4]=rendered.right-rendered.left;values[5]=rendered.bottom-rendered.top;
         values[6]=rectangle_ok;values[7]=state;return 0;
     }
+    case WM_APP+5: {
+        Dimensions *old=g_new(Dimensions,1);
+        EnterCriticalSection(&lock);old->generation=generation-1;LeaveCriticalSection(&lock);
+        old->width=13;old->height=17;
+        PostMessageW(hwnd,WM_APP+1,0,(LPARAM)old);
+        return 0;
+    }
+    case WM_APP+6:
+        EnterCriticalSection(&lock);guint old_generation=generation-1;LeaveCriticalSection(&lock);
+        PostMessageW(hwnd,WM_APP+4,old_generation,0);return 0;
 #endif
-    case WM_APP+1:
-        video_w=(int)wp;video_h=(int)lp;pan_x=pan_y=0;
-        resize_window();ShowWindow(hwnd,SW_SHOWNOACTIVATE);return 0;
+    case WM_APP+1: {
+        Dimensions *dimensions=(Dimensions*)lp;
+        int active=active_generation(dimensions->generation);
+        if(active){video_w=dimensions->width;video_h=dimensions->height;pan_x=pan_y=0;}
+        g_free(dimensions);
+        if(active){resize_window();ShowWindow(hwnd,SW_SHOWNOACTIVATE);}
+        return 0;
+    }
+    case WM_APP+4: {
+        EnterCriticalSection(&lock);
+        int idle=sink==NULL && generation==(guint)wp;
+        LeaveCriticalSection(&lock);
+        if(idle){
+            video_w=video_h=pan_x=pan_y=rectangle_ok=redraws=0;
+            KillTimer(hwnd,2);
+            ShowWindow(hwnd,SW_HIDE);
+        }
+        return 0;
+    }
     case WM_TIMER: {
         if(wp==2){viewport();if(--redraws<=0)KillTimer(hwnd,2);return 0;}
         int m,s;unsigned long long revision;FILE *f=_wfopen(command_path,L"r");
@@ -253,15 +312,11 @@ static GstPadProbeReturn caps_probe(GstPad *pad,GstPadProbeInfo *info,gpointer d
     if(GST_EVENT_TYPE(event)==GST_EVENT_CAPS) {
         GstCaps *caps;gst_event_parse_caps(event,&caps);
         const GstStructure *s=gst_caps_get_structure(caps,0);int w,h;
-        if(gst_structure_get_int(s,"width",&w)&&gst_structure_get_int(s,"height",&h))PostMessageW(window,WM_APP+1,w,h);
+        if(gst_structure_get_int(s,"width",&w)&&gst_structure_get_int(s,"height",&h))post_dimensions(w,h,GPOINTER_TO_UINT(data));
     }return GST_PAD_PROBE_OK;
 }
 
-static GstBusSyncReply prepare(GstBus *bus,GstMessage *message,gpointer data) {
-    if(!gst_is_video_overlay_prepare_window_handle_message(message))return GST_BUS_PASS;
-    if(!InitOnceExecuteOnce(&initialized,initialize_window,NULL,NULL))return GST_BUS_PASS;
-    if(WaitForSingleObject(ready,5000)!=WAIT_OBJECT_0 || !window)return GST_BUS_PASS;
-    GstElement *target=GST_ELEMENT(GST_MESSAGE_SRC(message));
+static void activate_target(GstElement *target) {
     EnterCriticalSection(&lock);
     GstElement *previous=sink;sink=NULL;
     LeaveCriticalSection(&lock);
@@ -269,16 +324,43 @@ static GstBusSyncReply prepare(GstBus *bus,GstMessage *message,gpointer data) {
     if(previous)gst_object_unref(previous);
     EnterCriticalSection(&lock);
     sink=GST_ELEMENT(gst_object_ref(target));
+    guint revision=++generation;
     LeaveCriticalSection(&lock);
+    g_object_set_data(G_OBJECT(target),"blueberry-overlay-bound",GINT_TO_POINTER(1));
     g_object_set(target,"force-aspect-ratio",TRUE,NULL);
     if(g_object_class_find_property(G_OBJECT_GET_CLASS(target),"fullscreen-toggle-mode"))
         g_object_set(target,"fullscreen-toggle-mode",0,NULL);
     gst_video_overlay_set_window_handle(GST_VIDEO_OVERLAY(target),(guintptr)window);
     GstPad *pad=gst_element_get_static_pad(target,"sink");
-    if(pad){gst_pad_add_probe(pad,GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM,caps_probe,NULL,NULL);
+    if(pad){
+        gulong previous_probe=(gulong)GPOINTER_TO_SIZE(g_object_get_data(G_OBJECT(pad),"blueberry-caps-probe"));
+        if(previous_probe)gst_pad_remove_probe(pad,previous_probe);
+        gulong probe=gst_pad_add_probe(pad,GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM,caps_probe,GUINT_TO_POINTER(revision),NULL);
+        g_object_set_data(G_OBJECT(pad),"blueberry-caps-probe",GSIZE_TO_POINTER(probe));
         GstCaps *caps=gst_pad_get_current_caps(pad);if(caps){const GstStructure *s=gst_caps_get_structure(caps,0);int w,h;
-            if(gst_structure_get_int(s,"width",&w)&&gst_structure_get_int(s,"height",&h))PostMessageW(window,WM_APP+1,w,h);
+            if(gst_structure_get_int(s,"width",&w)&&gst_structure_get_int(s,"height",&h))post_dimensions(w,h,revision);
             gst_caps_unref(caps);}gst_object_unref(pad);}
+}
+
+static GstBusSyncReply prepare(GstBus *bus,GstMessage *message,gpointer data) {
+    if(window && GST_MESSAGE_TYPE(message)==GST_MESSAGE_STATE_CHANGED){
+        GstState old_state,new_state;
+        gst_message_parse_state_changed(message,&old_state,&new_state,NULL);
+        if(new_state<old_state && new_state<=GST_STATE_READY)release_sink(GST_MESSAGE_SRC(message));
+        else if(new_state>old_state && new_state>=GST_STATE_PAUSED &&
+                GST_IS_VIDEO_OVERLAY(GST_MESSAGE_SRC(message)) &&
+                g_object_get_data(G_OBJECT(GST_MESSAGE_SRC(message)),"blueberry-overlay-bound")){
+            GstElement *target=GST_ELEMENT(GST_MESSAGE_SRC(message));
+            EnterCriticalSection(&lock);int resume=sink!=target;LeaveCriticalSection(&lock);
+            /* A reused sink keeps its external HWND and need not request it
+             * again. Re-arm caps tracking for the new session generation. */
+            if(resume)activate_target(target);
+        }
+    }
+    if(!gst_is_video_overlay_prepare_window_handle_message(message))return GST_BUS_PASS;
+    if(!InitOnceExecuteOnce(&initialized,initialize_window,NULL,NULL))return GST_BUS_PASS;
+    if(WaitForSingleObject(ready,5000)!=WAIT_OBJECT_0 || !window)return GST_BUS_PASS;
+    activate_target(GST_ELEMENT(GST_MESSAGE_SRC(message)));
     gst_message_unref(message);return GST_BUS_DROP;
 }
 void blueberry_display_attach(GstBus *bus) {gst_bus_set_sync_handler(bus,prepare,NULL,NULL);}
